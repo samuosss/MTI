@@ -1,0 +1,18 @@
+﻿.env
+.env.prod
+__pycache__/
+node_modules/
+*.pyc
+venv/
+.venv/
+dist/
+build/
+*.zip
+*.pdf
+Microsoft.Services.Store.winmd
+TODO/
+backup folder/
+claude md/
+data mti/
+fr/
+mti-frontend-routing-auth/
