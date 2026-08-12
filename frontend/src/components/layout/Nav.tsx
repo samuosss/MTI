@@ -318,14 +318,7 @@ export default function Nav() {
             </button>
           )}
 
-          <button
-            onClick={() => navigate("/admin")}
-            className="hidden md:flex items-center gap-2 text-sm font-semibold text-muted-foreground border border-border px-4 py-2 rounded-md hover:border-accent hover:text-accent transition-colors"
-          >
-            <LayoutDashboard size={15} />
-            Admin
-          </button>
-
+          
           <Link
             to="/quote"
             className="hidden md:flex bg-accent text-white text-sm font-semibold px-5 py-2.5 rounded-md hover:bg-orange-600 transition-colors"
