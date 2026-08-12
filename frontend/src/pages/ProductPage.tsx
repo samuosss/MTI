@@ -184,7 +184,7 @@ export default function ProductPage({
             onClick={() => navigate("/marketplace")}
             className="bg-primary text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-blue-900 transition-colors"
           >
-            Retour au Marketplace
+            Retour à la boutique
           </button>
         </div>
       </div>
@@ -206,7 +206,7 @@ export default function ProductPage({
             onClick={() => navigate("/marketplace")}
             className="flex items-center gap-1.5 hover:text-primary transition-colors font-medium"
           >
-            <ChevronLeft size={16} /> Marketplace
+            <ChevronLeft size={16} /> Retour à la boutique
           </button>
           <span>/</span>
           {product.category && (

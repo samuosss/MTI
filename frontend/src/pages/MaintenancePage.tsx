@@ -14,9 +14,9 @@ export default function MaintenancePage({ message, imageUrl }: MaintenancePagePr
             className="mx-auto max-w-xs w-full h-auto mb-2"
           />
         )}
-        <h1 className="text-2xl font-semibold">We'll be right back</h1>
+        <h1 className="text-2xl font-semibold">Nous revenons bientôt</h1>
         <p className="text-muted-foreground">
-          {message || "MTI is currently undergoing scheduled maintenance. Please check back shortly."}
+          {message || "MTI Shop est actuellement en maintenance planifiée. Merci de revenir un peu plus tard."}
         </p>
       </div>
     </div>

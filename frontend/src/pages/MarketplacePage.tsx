@@ -15,10 +15,10 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
 };
 
 const SORT_OPTIONS = [
-  { label: "Newest Arrivals", value: "newest" },
-  { label: "Price: Low to High", value: "price_asc" },
-  { label: "Price: High to Low", value: "price_desc" },
-  { label: "Name A–Z", value: "name" },
+  { label: "Nouveautés", value: "newest" },
+  { label: "Prix croissant", value: "price_asc" },
+  { label: "Prix décroissant", value: "price_desc" },
+  { label: "Nom A–Z", value: "name" },
 ];
 
 const PAGE_SIZE = 12;
@@ -337,7 +337,7 @@ export default function MarketplacePage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6 flex items-end justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Marketplace</h1>
+            <h1 className="text-2xl font-bold text-foreground">Boutique</h1>
             <p className="text-muted-foreground text-sm mt-1">
               {loading ? "Chargement…" : `${total} produit${total !== 1 ? "s" : ""} trouvé${total !== 1 ? "s" : ""}`}
               {activeCategoryName && <span className="ml-2 text-primary font-medium">— {activeCategoryName}</span>}

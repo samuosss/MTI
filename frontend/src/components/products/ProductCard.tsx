@@ -52,7 +52,7 @@ export default function ProductCard({
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30 gap-2">
             <ImagePlus size={36} />
-            <span className="text-xs">No image</span>
+            <span className="text-xs">Aucune image</span>
           </div>
         )}
 
@@ -138,7 +138,7 @@ export default function ProductCard({
               </li>
             ))}
             {product.specs.length > 3 && (
-              <li className="text-xs text-muted-foreground pl-3">+{product.specs.length - 3} more</li>
+              <li className="text-xs text-muted-foreground pl-3">+{product.specs.length - 3} de plus</li>
             )}
           </ul>
         )}
@@ -167,10 +167,10 @@ export default function ProductCard({
             }`}
           >
             {product.stock > 5
-              ? `${product.stock} in stock`
+              ? `${product.stock} en stock`
               : product.stock > 0
-              ? `Only ${product.stock} left`
-              : "Out of stock"}
+              ? `Plus que ${product.stock} disponibles`
+              : "Rupture de stock"}
           </span>
         </div>
 
@@ -181,13 +181,13 @@ export default function ProductCard({
             disabled={product.stock === 0}
             className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-white text-xs font-semibold py-2 rounded-lg hover:bg-blue-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <ShoppingCart size={13} /> Add to Cart
+            <ShoppingCart size={13} /> Ajouter au panier
           </button>
           <button
             onClick={onQuote}
             className="flex items-center justify-center gap-1.5 border border-border text-xs font-semibold px-3 py-2 rounded-lg hover:border-primary hover:text-primary transition-colors"
           >
-            <FileText size={13} /> Quote
+            <FileText size={13} /> Devis
           </button>
         </div>
       </div>

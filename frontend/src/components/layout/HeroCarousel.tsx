@@ -86,7 +86,7 @@ export default function HeroCarousel() {
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 via-secondary to-accent/10 flex items-center justify-center">
               <span className="text-muted-foreground text-sm font-medium">
-                No banner images yet — add some from the admin panel
+                Aucune bannière disponible — ajoutez des slides depuis le panneau d'administration
               </span>
             </div>
           )}

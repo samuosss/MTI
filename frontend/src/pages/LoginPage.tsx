@@ -31,10 +31,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <img src={logo} alt="MTI" className="h-10 w-auto object-contain mb-6" />
-          <h1 className="text-xl font-bold text-foreground">Admin Console</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to manage the MTI back office</p>
+            <h1 className="text-xl font-bold text-foreground">Console Admin</h1>
+            <p className="text-sm text-muted-foreground mt-1">Connectez-vous pour gérer le back office MTI</p>
         </div>
-
         <form
           onSubmit={handleSubmit}
           className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-4"
@@ -66,7 +65,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wide">
-              Password
+              Mot de passe
             </label>
             <div className="relative">
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -87,7 +86,7 @@ export default function LoginPage() {
             disabled={isLoading}
             className="w-full bg-primary text-white font-semibold py-2.5 rounded-lg hover:bg-blue-900 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Signing in..." : "Sign In"}
+            {isLoading ? "Connexion..." : "Se connecter"}
             {!isLoading && <ArrowRight size={16} />}
           </button>
         </form>
@@ -96,7 +95,7 @@ export default function LoginPage() {
           onClick={() => navigate("/")}
           className="w-full text-center text-xs text-muted-foreground hover:text-foreground mt-4 transition-colors"
         >
-          ← Back to site
+          ← Retour au site
         </button>
       </div>
     </div>

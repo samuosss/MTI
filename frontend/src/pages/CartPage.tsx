@@ -182,7 +182,7 @@ export default function CartPage({
         phone: customer.phone || null,
         category: "Cart order",
         description: [
-          "Commande depuis le marketplace.",
+          "Commande depuis la boutique.",
           appliedPromo ? `Code promo: ${appliedPromo.code} (${appliedPromo.percent}%).` : null,
           `Sous-total: ${subtotal.toLocaleString()} TND.`,
           appliedPromo ? `Réduction: ${discount.toLocaleString()} TND.` : null,
@@ -219,7 +219,7 @@ export default function CartPage({
             onClick={() => navigate("/marketplace")}
             className="flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-md hover:bg-blue-900 transition-colors mt-2"
           >
-            Retour au marketplace <ArrowRight size={16} />
+            Retour à la boutique <ArrowRight size={16} />
           </button>
         </div>
         <Footer />
@@ -240,7 +240,7 @@ export default function CartPage({
             onClick={() => navigate("/marketplace")}
             className="flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-md hover:bg-blue-900 transition-colors mt-2"
           >
-            Parcourir le catalogue <ArrowRight size={16} />
+            Retour à la boutique <ArrowRight size={16} />
           </button>
         </div>
         <Footer />

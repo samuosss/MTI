@@ -8,15 +8,20 @@ import { listProducts } from "../api/products";
 import type { ProductOut } from "../types/product";
 
 const categoryIcons: Record<string, React.ElementType> = {
-  Desktops: Monitor, Laptops: Laptop, Workstations: Server,
-  Components: Cpu, Networking: Wifi, Storage: HardDrive,
-  Accessories: Headphones, "Office Supplies": Headphones,
+  "Ordinateurs de bureau": Monitor,
+  "Ordinateurs portables": Laptop,
+  "Stations de travail": Server,
+  Composants: Cpu,
+  Réseaux: Wifi,
+  Stockage: HardDrive,
+  Accessoires: Headphones,
+  "Fournitures de bureau": Headphones,
 };
 
 const expertServices = [
-  { icon: Network, title: "Network Setup", desc: "Custom architecture, fiber optic cabling, enterprise-grade Wi-Fi and switching solutions for office spaces." },
-  { icon: Camera, title: "Surveillance & CCTV", desc: "High-definition security systems featuring AI-powered facial recognition, remote monitoring for your facility." },
-  { icon: Wrench, title: "AMC & Maintenance", desc: "Comprehensive Annual Maintenance Contracts (AMC) to ensure your IT infrastructure runs smoothly." },
+  { icon: Network, title: "Installation réseau", desc: "Architecture sur mesure, câblage fibre optique et Wi-Fi d'entreprise optimisé pour vos locaux." },
+  { icon: Camera, title: "Surveillance & vidéosurveillance", desc: "Systèmes de sécurité haute définition avec reconnaissance faciale et supervision à distance." },
+  { icon: Wrench, title: "Contrats de maintenance", desc: "Contrats complets pour garantir le bon fonctionnement de votre infrastructure IT." },
 ];
 
 export default function HomePage({
@@ -42,11 +47,11 @@ export default function HomePage({
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-foreground">Explore Categories</h2>
-            <p className="text-muted-foreground text-sm mt-1">Browse from high-grade enterprise hardware</p>
+            <h2 className="text-xl font-bold text-foreground">Explorer les catégories</h2>
+            <p className="text-muted-foreground text-sm mt-1">Parcourez nos matériels d'entreprise haut de gamme</p>
           </div>
           <button onClick={() => navigate("/marketplace")} className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
-            View All <ChevronRight size={16} />
+            Voir tout <ChevronRight size={16} />
           </button>
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
@@ -67,9 +72,9 @@ export default function HomePage({
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-foreground">Featured Products</h2>
+          <h2 className="text-xl font-bold text-foreground">Produits en vedette</h2>
           <button onClick={() => navigate("/marketplace")} className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
-            View All <ChevronRight size={16} />
+            Voir tout <ChevronRight size={16} />
           </button>
         </div>
         {loading ? (
@@ -79,7 +84,7 @@ export default function HomePage({
             ))}
           </div>
         ) : featured.length === 0 ? (
-          <p className="text-muted-foreground text-sm text-center py-12">No products yet. Add some from the admin panel.</p>
+          <p className="text-muted-foreground text-sm text-center py-12">Aucun produit pour le moment. Ajoutez-en depuis le panneau d'administration.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {featured.map((p) => (
@@ -101,19 +106,19 @@ export default function HomePage({
           <div className="relative flex flex-col md:flex-row items-center justify-between p-8 md:p-12 gap-6">
             <div>
               <h2 className="text-3xl md:text-4xl font-black text-white mb-2">
-                Bulk Purchase<br />Discount: Save<br /><span className="text-accent">up to 25%</span>
+                Remise sur achat en volume :<br />Économisez<br /><span className="text-accent">jusqu'à 25%</span>
               </h2>
               <p className="text-blue-200 text-sm max-w-xs">
-                Upgrade your entire office fleet with flexible pricing on workstations and networking equipment for orders over 10 units.
+                Renouvelez votre parc avec des tarifs flexibles sur les stations et équipements réseau pour les commandes supérieures à 10 unités.
               </p>
             </div>
             <div className="flex flex-col items-center gap-4">
               <div className="bg-white/10 border border-white/20 rounded-xl p-5 text-center">
-                <div className="text-white font-semibold text-sm mb-1">Offer Ends In</div>
-                <div className="text-accent font-black text-2xl">14 Days : 22 Hours</div>
+                <div className="text-white font-semibold text-sm mb-1">Offre se termine dans</div>
+                <div className="text-accent font-black text-2xl">14 jours : 22 heures</div>
               </div>
               <button onClick={() => navigate("/quote")} className="bg-accent text-white font-semibold px-8 py-3 rounded-md hover:bg-orange-600 transition-colors">
-                Request Bulk Quote
+                Demander un devis en volume
               </button>
             </div>
           </div>
@@ -122,8 +127,8 @@ export default function HomePage({
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
         <div className="text-center mb-10">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Expert IT Solutions for Your Business</h2>
-          <p className="text-muted-foreground text-sm">Beyond hardware, we provide end-to-end technical support and infrastructure management.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Solutions IT expertes pour votre entreprise</h2>
+          <p className="text-muted-foreground text-sm">Au-delà du matériel, nous fournissons un support technique complet et une gestion d'infrastructure.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {expertServices.map((s) => (
@@ -134,7 +139,7 @@ export default function HomePage({
               <h3 className="font-semibold text-foreground mb-2">{s.title}</h3>
               <p className="text-muted-foreground text-sm leading-relaxed mb-4">{s.desc}</p>
               <button onClick={() => navigate("/services")} className="text-primary text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all">
-                Learn More <ChevronRight size={14} />
+                En savoir plus <ChevronRight size={14} />
               </button>
             </div>
           ))}
@@ -143,7 +148,7 @@ export default function HomePage({
 
       <section className="bg-card border-t border-border py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-6">Official Distribution Partners</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-6">Partenaires de distribution officiels</p>
           <div className="flex flex-wrap justify-center items-center gap-8 opacity-40 grayscale">
             {["CISCO", "HP", "Dell", "Lenovo", "Intel", "ASUS"].map((b) => (
               <span key={b} className="text-xl font-black text-foreground">{b}</span>

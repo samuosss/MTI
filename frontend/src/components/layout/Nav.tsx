@@ -26,7 +26,7 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
 const FEATURED_BRANDS = ["Dell", "HP", "Lenovo", "Cisco", "Fortinet", "Synology"];
 
 const OTHER_LINKS = [
-  { label: "IT Services", path: "/services" },
+  { label: "Services IT", path: "/services" },
   { label: "Support", path: "/quote" },
 ];
 
@@ -137,7 +137,7 @@ export default function Nav() {
               className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg font-medium transition-colors
                 ${megaOpen || isActive("/marketplace") ? "text-accent" : "text-muted-foreground hover:text-accent"}`}
             >
-              Marketplace
+              Boutique
               <ChevronDown
                 size={13}
                 className={`transition-transform duration-200 ${megaOpen ? "rotate-180" : ""}`}
@@ -229,7 +229,7 @@ export default function Nav() {
                             onClick={() => goToCategory(hoveredCat.id)}
                             className="flex items-center gap-1.5 text-sm text-accent font-medium hover:underline"
                           >
-                            Browse all {hoveredCat.name} <ChevronRight size={13} />
+                            Parcourir tout {hoveredCat.name} <ChevronRight size={13} />
                           </button>
                         )}
 
@@ -237,7 +237,7 @@ export default function Nav() {
                           onClick={() => goToCategory(hoveredCat.id)}
                           className="mt-6 inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline uppercase tracking-wide"
                         >
-                          View all {hoveredCat.name} <ChevronRight size={12} />
+                          Voir tout {hoveredCat.name} <ChevronRight size={12} />
                         </button>
                       </>
                     )}
@@ -248,7 +248,7 @@ export default function Nav() {
                 <div className="border-t border-border bg-gray-50">
                   <div className="max-w-7xl mx-auto px-5 py-3 flex items-center gap-3 flex-wrap">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mr-2 flex-shrink-0">
-                      Brands
+                      Marques
                     </span>
                     {FEATURED_BRANDS.map((brand) => (
                       <button
@@ -330,7 +330,7 @@ export default function Nav() {
             to="/quote"
             className="hidden md:flex bg-accent text-white text-sm font-semibold px-5 py-2.5 rounded-md hover:bg-orange-600 transition-colors"
           >
-            Request Quote
+            Demander un devis
           </Link>
 
           <button className="md:hidden" onClick={() => setMobileOpen(!mobileOpen)}>
@@ -346,7 +346,7 @@ export default function Nav() {
             onClick={() => setMobileMarketOpen((v) => !v)}
             className="flex items-center justify-between text-sm font-medium text-foreground hover:text-accent transition-colors py-1"
           >
-            <span>Marketplace</span>
+            <span>Boutique</span>
             <ChevronDown size={14} className={`transition-transform ${mobileMarketOpen ? "rotate-180" : ""}`} />
           </button>
 
@@ -394,7 +394,7 @@ export default function Nav() {
 
           <Link to="/cart" onClick={() => setMobileOpen(false)}
             className="text-sm font-medium text-foreground hover:text-accent py-1">
-            Cart {cartCount > 0 && `(${cartCount})`}
+            Panier {cartCount > 0 && `(${cartCount})`}
           </Link>
 
           {isAuthenticated && customer ? (
@@ -415,12 +415,12 @@ export default function Nav() {
 
           <button onClick={() => { navigate("/admin"); setMobileOpen(false); }}
             className="text-left text-sm font-medium text-foreground hover:text-accent py-1">
-            Admin Dashboard
+            Tableau de bord admin
           </button>
 
           <Link to="/quote" onClick={() => setMobileOpen(false)}
             className="bg-accent text-white text-center font-semibold py-3 rounded-md hover:bg-orange-600 transition-colors mt-2">
-            Request Quote
+            Demander un devis
           </Link>
         </div>
       )}
