@@ -1,20 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
-  LayoutDashboard, Package, ListOrdered, Users, BarChart3, Settings,
+  LayoutDashboard, Package, FolderTree, ListOrdered, Users, BarChart3, Settings,
   Menu, Bell, LogOut, Activity, Download, Image,
 } from "lucide-react";
 import logo from "@/imports/new-removebg-preview.png";
 import { useAuth } from "../../context/AuthContext";
 
 export const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard Overview", id: "overview" },
-  { icon: Package, label: "Product Management", id: "products" },
-  { icon: ListOrdered, label: "Quote Requests", id: "quotes" },
-  { icon: Image, label: "Hero Slideshow", id: "banner" },
-  { icon: Users, label: "Customers", id: "customers" },
-  { icon: BarChart3, label: "Analytics", id: "analytics" },
-  { icon: Settings, label: "Settings", id: "settings" },
+  { icon: LayoutDashboard, label: "tableau de bord", id: "overview" },
+  { icon: Package, label: "Gestion des produits", id: "products" },
+  { icon: FolderTree, label: "Catégories et marques", id: "categories" },
+  { icon: ListOrdered, label: "Demandes de devis", id: "quotes" },
+  { icon: Image, label: "Diaporama principal", id: "banner" },
+  { icon: Users, label: "Clients", id: "customers" },
+  { icon: BarChart3, label: "Analytique", id: "analytics" },
+  { icon: Settings, label: "Paramètres", id: "settings" },
 ];
 
 export default function DashboardLayout({
@@ -47,8 +48,8 @@ export default function DashboardLayout({
         <div className="p-5 border-b border-white/10 flex items-center gap-3">
           <img src={logo} alt="MTI" className="h-15 w-auto object-contain brightness-0 invert" />
           <div className="text-white text-xs leading-tight">
-            <div className="font-bold">Admin Console</div>
-            <div className="opacity-60">Back Office</div>
+            <div className="font-bold">Console d'administration</div>
+            <div className="opacity-60">Bureau d'arrière-plan</div>
           </div>
         </div>
 
@@ -67,19 +68,19 @@ export default function DashboardLayout({
 
         <div className="p-4 border-t border-white/10 space-y-1">
           <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-            <Bell size={15} /> Support
+            <Bell size={15} /> Aide
           </button>
           <button
             onClick={handleBackToSite}
             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
           >
-            <LogOut size={15} /> Back to Site
+            <LogOut size={15} /> Retour au site
           </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
           >
-            <LogOut size={15} /> Sign Out
+            <LogOut size={15} /> Déconnexion
           </button>
         </div>
       </aside>
@@ -93,15 +94,15 @@ export default function DashboardLayout({
               <Menu size={20} />
             </button>
             <h1 className="text-lg font-bold text-foreground">
-              {navItems.find((n) => n.id === activeSection)?.label ?? "Dashboard"}
+              {navItems.find((n) => n.id === activeSection)?.label ?? "Tableau de bord"}
             </h1>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 bg-secondary border border-border rounded-lg px-3 py-1.5 text-xs text-muted-foreground">
-              <Activity size={12} /> Last 30 Days
+              <Activity size={12} /> 30 derniers jours
             </div>
             <button className="flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-900 transition-colors">
-              <Download size={13} /> Export Report
+              <Download size={13} /> Exporter le rapport
             </button>
             <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-xs font-bold">A</div>
           </div>

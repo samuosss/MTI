@@ -53,14 +53,14 @@ function BanModal({
       <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <Ban size={18} className="text-red-500" /> Ban Customer
+            <Ban size={18} className="text-red-500" /> Interdire le client
           </h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X size={18} /></button>
         </div>
         <div className="p-6 space-y-4">
           <p className="text-sm text-muted-foreground">
-            You're about to ban <span className="font-semibold text-foreground">{customer.full_name}</span> ({customer.email}).
-            This immediately ends all their active sessions.
+            Vous êtez sur le point d'interdire <span className="font-semibold text-foreground">{customer.full_name}</span> ({customer.email}).
+            Cela met immédiatement fin à toutes leurs sessions actives.
           </p>
           {error && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2.5">
@@ -68,11 +68,11 @@ function BanModal({
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Reason (optional)</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">Raison (optionnel)</label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Repeated fraudulent quote requests"
+              placeholder="ex. Demandes de devis frauduleuses répétées"
               rows={3}
               className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors resize-none"
             />
@@ -84,10 +84,10 @@ function BanModal({
             disabled={saving}
             className="flex-1 bg-red-500 text-white font-semibold py-2.5 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm"
           >
-            {saving ? "Banning…" : "Confirm Ban"}
+            {saving ? "Interdiction en cours..." : "Confirmer l'interdiction"}
           </button>
           <button onClick={onClose} className="px-5 border border-border text-muted-foreground rounded-lg hover:border-primary transition-colors text-sm">
-            Cancel
+            Annuler
           </button>
         </div>
       </div>
@@ -137,9 +137,9 @@ export default function CustomersTab() {
     try {
       const updated = await unbanCustomer(c.id);
       patchCustomer(updated);
-      setToast({ message: `${c.full_name} unbanned.`, type: "success" });
+      setToast({ message: `${c.full_name} levé de l'interdiction.`, type: "success" });
     } catch (err) {
-      setToast({ message: err instanceof Error ? err.message : "Unban failed.", type: "error" });
+      setToast({ message: err instanceof Error ? err.message : "Échec de la levée de l'interdiction.", type: "error" });
     } finally {
       setActingId(null);
     }
@@ -153,7 +153,7 @@ export default function CustomersTab() {
     patchCustomer(updated);
     setActingId(null);
     setBanTarget(null);
-    setToast({ message: `${target.full_name} banned.`, type: "success" });
+    setToast({ message: `${target.full_name} interdit.`, type: "success" });
   }
 
   async function handleToggleActive(c: CustomerAdminOut) {
@@ -161,9 +161,9 @@ export default function CustomersTab() {
     try {
       const updated = await setCustomerActive(c.id, !c.is_active);
       patchCustomer(updated);
-      setToast({ message: `${c.full_name} ${updated.is_active ? "activated" : "deactivated"}.`, type: "success" });
+      setToast({ message: `${c.full_name} ${updated.is_active ? "activé" : "désactivé"}.`, type: "success" });
     } catch (err) {
-      setToast({ message: err instanceof Error ? err.message : "Update failed.", type: "error" });
+      setToast({ message: err instanceof Error ? err.message : "Échec de la mise à jour.", type: "error" });
     } finally {
       setActingId(null);
     }
@@ -174,9 +174,9 @@ export default function CustomersTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {loading ? "Loading…" : (
+          {loading ? "Chargement..." : (
             <>
-              <span className="font-semibold text-foreground">{total}</span> customer{total !== 1 ? "s" : ""}
+              <span className="font-semibold text-foreground">{total}</span> client{total !== 1 ? "s" : ""}
             </>
           )}
         </p>
@@ -189,7 +189,7 @@ export default function CustomersTab() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by email or name…"
+            placeholder="Rechercher par email ou nom..."
             className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:border-primary transition-colors"
           />
           {search && (
@@ -205,22 +205,22 @@ export default function CustomersTab() {
         <table className="w-full text-sm">
           <thead className="bg-secondary border-b border-border">
             <tr>
-              <th className="text-left text-xs text-muted-foreground font-semibold px-4 py-3">Customer</th>
-              <th className="text-left text-xs text-muted-foreground font-semibold px-4 py-3 hidden md:table-cell">Joined</th>
-              <th className="text-left text-xs text-muted-foreground font-semibold px-4 py-3">Status</th>
-              <th className="text-left text-xs text-muted-foreground font-semibold px-4 py-3 hidden lg:table-cell">Ban Reason</th>
+              <th className="text-left text-xs text-muted-foreground font-semibold px-4 py-3">Client</th>
+              <th className="text-left text-xs text-muted-foreground font-semibold px-4 py-3 hidden md:table-cell">Adhésion</th>
+              <th className="text-left text-xs text-muted-foreground font-semibold px-4 py-3">Statut</th>
+              <th className="text-left text-xs text-muted-foreground font-semibold px-4 py-3 hidden lg:table-cell">Raison de l'interdiction</th>
               <th className="text-right text-xs text-muted-foreground font-semibold px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {loading && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">Loading customers…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">Chargement des clients...</td></tr>
             )}
             {!loading && customers.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-12 text-center">
-                  <p className="text-sm font-semibold text-foreground mb-1">No customers found.</p>
-                  <p className="text-xs text-muted-foreground">Try adjusting your search.</p>
+                  <p className="text-sm font-semibold text-foreground mb-1">Aucun client trouvé.</p>
+                  <p className="text-xs text-muted-foreground">Essayez d'ajuster votre recherche.</p>
                 </td>
               </tr>
             )}
@@ -245,7 +245,7 @@ export default function CustomersTab() {
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       c.is_banned ? "bg-red-100 text-red-600" : "bg-secondary text-muted-foreground"
                     }`}>
-                      {c.is_banned ? "BANNED" : "NOT BANNED"}
+                      {c.is_banned ? "INTERDIT" : "NON INTERDIT"}
                     </span>
                     <button
                       onClick={() => handleToggleActive(c)}
@@ -254,7 +254,7 @@ export default function CustomersTab() {
                         c.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-orange-100 text-orange-600 hover:bg-orange-200"
                       }`}
                     >
-                      {c.is_active ? "ACTIVE" : "INACTIVE"}
+                        {c.is_active ? "ACTIF" : "INACTIF"}
                     </button>
                   </div>
                 </td>
@@ -269,7 +269,7 @@ export default function CustomersTab() {
                         disabled={actingId === c.id}
                         className="flex items-center gap-1.5 text-xs font-semibold text-green-700 border border-green-200 bg-green-50 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-40"
                       >
-                        <ShieldCheck size={13} /> Unban
+                        <ShieldCheck size={13} /> Léver l'interdiction
                       </button>
                     ) : (
                       <button
@@ -277,7 +277,7 @@ export default function CustomersTab() {
                         disabled={actingId === c.id}
                         className="flex items-center gap-1.5 text-xs font-semibold text-red-600 border border-red-200 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-40"
                       >
-                        <UserX size={13} /> Ban
+                        <UserX size={13} /> Interdire
                       </button>
                     )}
                   </div>
