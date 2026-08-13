@@ -18,6 +18,8 @@ import EmailVerificationBanner from "../components/layout/EmailVerificationBanne
 import { useCart } from "../context/CartContext";
 import { useCustomerAuth } from "../context/CustomerAuthContext";
 import MaintenanceGate from "../components/MaintenanceGate";
+import ProductFormPage from "../pages/admin/ProductFormPage";
+
 
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -102,6 +104,8 @@ export default function App() {
             />
           </PublicLayout>
         } />
+        <Route path="/admin/products/new" element={<ProductFormPage />} />
+        <Route path="/admin/products/:id/edit" element={<ProductFormPage />} />
       </Routes>
       <AuthModal />
     </>

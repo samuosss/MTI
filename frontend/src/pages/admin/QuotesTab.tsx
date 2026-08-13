@@ -79,7 +79,7 @@ export default function QuotesTab() {
         current?.id === updated.id ? updated : current
       );
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to update quote status.");
+      setErrorMessage(error instanceof Error ? error.message : "Impossible de mettre à jour le statut du devis.");
     } finally {
       setUpdatingId(null);
     }
@@ -89,9 +89,9 @@ export default function QuotesTab() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          {activeFilter === "All" ? total : quotes.length} request
+          {activeFilter === "All" ? total : quotes.length} demande
           {(activeFilter === "All" ? total : quotes.length) !== 1 ? "s" : ""}
-          <span className="ml-2 text-xs">({activeCount} active in this view)</span>
+          <span className="ml-2 text-xs">({activeCount} activ{activeCount !== 1 ? "es" : "e"} dans cette vue)</span>
         </p>
 
         <div className="flex flex-wrap gap-2">
@@ -136,14 +136,14 @@ export default function QuotesTab() {
                   <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 size={16} className="animate-spin" />
-                      Loading quote requests...
+                      Chargement des demandes de devis...
                     </div>
                   </td>
                 </tr>
               ) : quotes.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
-                    No quote requests found.
+                    Aucune demande de devis trouvée.
                   </td>
                 </tr>
               ) : (
@@ -245,7 +245,7 @@ export default function QuotesTab() {
               </div>
 
               <div>
-                <p className="text-xs text-muted-foreground mb-2">Status</p>
+                <p className="text-xs text-muted-foreground mb-2">Statut</p>
                 <div className="flex flex-wrap gap-2">
                   {statusOptions.map((status) => (
                     <button
@@ -275,20 +275,20 @@ export default function QuotesTab() {
               )}
 
               <div>
-                <p className="text-xs text-muted-foreground mb-2">Requested Products</p>
+                <p className="text-xs text-muted-foreground mb-2">Produits demandés</p>
                 {selectedQuote.items.length === 0 ? (
                   <div className="text-sm text-muted-foreground border border-dashed border-border rounded-lg p-4">
-                    No product line items attached.
+                    Aucun élément de ligne de produit joint.
                   </div>
                 ) : (
                   <div className="border border-border rounded-lg overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-secondary">
                         <tr>
-                          <th className="text-left text-xs text-muted-foreground font-semibold px-3 py-2">Product</th>
+                          <th className="text-left text-xs text-muted-foreground font-semibold px-3 py-2">Produit</th>
                           <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2">Qty</th>
-                          <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2">Unit</th>
-                          <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2">Line</th>
+                          <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2">Unité</th>
+                          <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2">Ligne</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">

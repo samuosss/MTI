@@ -8,6 +8,7 @@ import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
 import "./styles/index.css";
 
+
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>

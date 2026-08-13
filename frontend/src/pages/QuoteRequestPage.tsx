@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { FileText, Upload, ArrowRight, Shield, Users, Truck, MapPin, Phone, MessageCircle, ChevronDown } from "lucide-react";
+import { useState, useRef } from "react";
+import { FileText, Upload, ArrowRight, Shield, Users, Truck, MapPin, Phone, MessageCircle, ChevronDown, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import Footer from "../components/layout/Footer";
 
 const faqItems = [
@@ -8,10 +8,75 @@ const faqItems = [
   { q: "Quels sont vos secteurs d'intervention ?", a: "Nous servons des clients particuliers et professionnels partout en Tunisie." },
 ];
 
+const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".xlsx"];
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 Mo
+
+type SubmitState = "idle" | "submitting" | "success" | "error";
+
 export default function QuoteRequestPage() {
+  // NOTE: key is "contact" in local state (unchanged UI), mapped to "contact_person" only when sent to the API
   const [form, setForm] = useState({ company: "", contact: "", email: "", phone: "", description: "" });
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<SubmitState>("idle");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function validateAndSetFile(f: File | null) {
+    setFileError(null);
+    if (!f) return;
+    const ext = "." + (f.name.split(".").pop()?.toLowerCase() ?? "");
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      setFileError(`Type de fichier non pris en charge. Autorisés : ${ALLOWED_EXTENSIONS.join(", ")}`);
+      return;
+    }
+    if (f.size > MAX_FILE_SIZE) {
+      setFileError("Le fichier dépasse la taille maximale de 100 Mo.");
+      return;
+    }
+    setFile(f);
+  }
+
+  async function handleSubmit() {
+    if (!form.company || !form.contact || !form.email) {
+      setSubmitError("Merci de renseigner au minimum la société, le contact et l'email.");
+      setSubmitState("error");
+      return;
+    }
+
+    setSubmitState("submitting");
+    setSubmitError(null);
+
+    const fd = new FormData();
+    fd.append("company", form.company);
+    fd.append("contact_person", form.contact); // backend field name
+    fd.append("email", form.email);
+    if (form.phone) fd.append("phone", form.phone);
+    if (form.description) fd.append("description", form.description);
+    if (file) fd.append("attachment", file);
+
+    try {
+      const res = await fetch("/api/quotes", {
+        method: "POST",
+        body: fd, // no Content-Type header — browser sets multipart boundary automatically
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail ?? `Erreur ${res.status}`);
+      }
+
+      await res.json();
+      setSubmitState("success");
+      setForm({ company: "", contact: "", email: "", phone: "", description: "" });
+      setFile(null);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : "Une erreur est survenue.");
+      setSubmitState("error");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,53 +100,106 @@ export default function QuoteRequestPage() {
               <h2 className="text-lg font-bold text-foreground">Formulaire de demande de devis</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              {[
-                ["company", "Société / Organisation", "Ex: MTI Solutions"],
-                ["contact", "Personne de contact", "Ex: Amine"],
-                ["email", "Email professionnel", "exemple@entreprise.tn"],
-                ["phone", "Téléphone", "+216 00 000 000"],
-              ].map(([key, label, placeholder]) => (
-                <div key={key}>
-                  <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wide">{label}</label>
-                  <input
-                    value={(form as any)[key]}
-                    onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
-                    placeholder={placeholder}
-                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
+            {submitState === "success" ? (
+              <div className="flex flex-col items-center text-center py-10">
+                <CheckCircle2 size={40} className="text-green-500 mb-3" />
+                <p className="font-bold text-foreground mb-1">Demande envoyée avec succès</p>
+                <p className="text-sm text-muted-foreground mb-4">Notre équipe vous contactera sous peu.</p>
+                <button
+                  onClick={() => setSubmitState("idle")}
+                  className="text-sm font-semibold text-primary hover:underline"
+                >
+                  Envoyer une nouvelle demande
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  {[
+                    ["company", "Société / Organisation", "Ex: MTI Solutions"],
+                    ["contact", "Personne de contact", "Ex: Amine"],
+                    ["email", "Email professionnel", "exemple@entreprise.tn"],
+                    ["phone", "Téléphone", "+216 00 000 000"],
+                  ].map(([key, label, placeholder]) => (
+                    <div key={key}>
+                      <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wide">{label}</label>
+                      <input
+                        value={(form as any)[key]}
+                        onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
+                        placeholder={placeholder}
+                        className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wide">Description du projet</label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                    placeholder="Décrivez les postes, le matériel réseau ou les services IT dont vous avez besoin..."
+                    rows={4}
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary resize-none transition-colors"
                   />
                 </div>
-              ))}
-            </div>
 
-            <div className="mb-4">
-              <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wide">Description du projet</label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                placeholder="Décrivez les postes, le matériel réseau ou les services IT dont vous avez besoin..."
-                rows={4}
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary resize-none transition-colors"
-              />
-            </div>
+                <div className="mb-2">
+                  <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wide">Télécharger le cahier des charges / fichier RFQ</label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ALLOWED_EXTENSIONS.join(",")}
+                    className="hidden"
+                    onChange={(e) => validateAndSetFile(e.target.files?.[0] ?? null)}
+                  />
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOver(false);
+                      validateAndSetFile(e.dataTransfer.files?.[0] ?? null);
+                    }}
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
+                  >
+                    <Upload size={28} className="mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium text-foreground">
+                      {file ? file.name : "Cliquez pour télécharger ou glissez-déposez"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, DOCX ou XLSX (max. 100 Mo)</p>
+                  </div>
+                  {fileError && (
+                    <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={12} /> {fileError}
+                    </p>
+                  )}
+                </div>
 
-            <div className="mb-6">
-              <label className="block text-xs font-semibold text-foreground mb-1.5 uppercase tracking-wide">Télécharger le cahier des charges / fichier RFQ</label>
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => { e.preventDefault(); setDragOver(false); }}
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
-              >
-                <Upload size={28} className="mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm font-medium text-foreground">Cliquez pour télécharger ou glissez-déposez</p>
-                <p className="text-xs text-muted-foreground mt-1">PDF, DOCX ou XLSX (max. 100 Mo)</p>
-              </div>
-            </div>
+                {submitError && (
+                  <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <AlertCircle size={14} /> {submitError}
+                  </div>
+                )}
 
-            <button className="w-full bg-accent text-white font-bold py-4 rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 text-base">
-              Envoyer la demande de devis <ArrowRight size={18} />
-            </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitState === "submitting"}
+                  className="w-full bg-accent text-white font-bold py-4 rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 text-base disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {submitState === "submitting" ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" /> Envoi en cours...
+                    </>
+                  ) : (
+                    <>
+                      Envoyer la demande de devis <ArrowRight size={18} />
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
@@ -122,6 +240,7 @@ export default function QuoteRequestPage() {
                 </div>
               </div>
             </div>
+            
             <a
               href="https://wa.me/21698241122"
               target="_blank"

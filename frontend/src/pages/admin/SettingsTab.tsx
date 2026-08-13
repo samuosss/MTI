@@ -58,13 +58,13 @@ export default function SettingsTab() {
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground text-sm p-6">
-        <Loader2 size={16} className="animate-spin" /> Loading settings…
+        <Loader2 size={16} className="animate-spin" /> Chargement des paramètres…
       </div>
     );
   }
 
   if (!settings) {
-    return <div className="p-6 text-sm text-red-600">{error ?? "Could not load settings."}</div>;
+    return <div className="p-6 text-sm text-red-600">{error ?? "Impossible de charger les paramètres."}</div>;
   }
 
   return (
@@ -76,7 +76,7 @@ export default function SettingsTab() {
       )}
       {savedFlash && (
         <div className="flex items-center gap-1.5 text-xs text-green-700">
-          <Check size={13} /> Saved
+          <Check size={13} /> Enregistré
         </div>
       )}
 
@@ -84,9 +84,9 @@ export default function SettingsTab() {
       <section className="bg-white border border-border rounded-lg p-5 space-y-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-sm font-bold text-foreground">Maintenance Mode</h3>
+            <h3 className="text-sm font-bold text-foreground">Mode maintenance</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Shows customers a maintenance page. The admin console stays reachable at any time.
+              Affiche aux clients une page de maintenance. La console d'administration reste toujours accessible.
             </p>
           </div>
           <button

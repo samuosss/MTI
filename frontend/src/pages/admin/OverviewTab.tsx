@@ -79,7 +79,7 @@ export default function OverviewTab({
     return (
       <div className="h-64 flex items-center justify-center">
         <div className="text-muted-foreground">
-          Loading dashboard...
+          Chargement du tableau de bord...
         </div>
       </div>
     );
@@ -103,25 +103,25 @@ export default function OverviewTab({
 
   const kpis = [
     {
-      label: "Total Inventory Value",
+      label: "Valeur totale de l'inventaire",
       value: formatMoney(overview?.total_inventory_value),
-      change: "+12.5%",
+      change: "+12,5%",
       up: true,
       icon: DollarSign,
       color: "text-primary bg-primary/10",
     },
     {
-      label: "Active Quotes",
+      label: "Devis actifs",
       value: (
         overview?.active_quotes || 0
       ).toLocaleString(),
-      change: "+8.2%",
+      change: "+8,2%",
       up: true,
       icon: FileText,
       color: "text-blue-500 bg-blue-50",
     },
     {
-      label: "Pending Quotes",
+      label: "Devis en attente",
       value: (
         overview?.pending_quotes || 0
       ).toLocaleString(),
@@ -131,9 +131,9 @@ export default function OverviewTab({
       color: "text-orange-500 bg-orange-50",
     },
     {
-      label: "Monthly Revenue",
+      label: "Revenu mensuel",
       value: formatMoney(overview?.monthly_revenue_estimate),
-      change: "+6.1%",
+      change: "+6,1%",
       up: true,
       icon: TrendingUp,
       color: "text-green-600 bg-green-50",
@@ -182,7 +182,7 @@ export default function OverviewTab({
               ) : (
                 <ChevronDown size={13} />
               )}
-              {k.change} vs last month
+              {k.change} vs mois dernier
             </div>
           </div>
         ))}
@@ -199,7 +199,7 @@ export default function OverviewTab({
         <div className="lg:col-span-2 bg-card rounded-xl border border-border p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-foreground text-sm">
-              Top Categories
+              Catégories principales
             </h3>
 
             <button className="text-muted-foreground hover:text-foreground">
@@ -255,7 +255,7 @@ export default function OverviewTab({
             </ResponsiveContainer>
           ) : (
             <div className="h-[220px] border border-dashed border-border rounded-lg flex items-center justify-center text-sm text-muted-foreground">
-              No category data available.
+              Aucune donnée de catégorie disponible.
             </div>
           )}
         </div>
@@ -263,14 +263,14 @@ export default function OverviewTab({
         <div className="lg:col-span-3 bg-card rounded-xl border border-border p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-foreground text-sm">
-              Recent Quote Requests
+              Demandes de devis récentes
             </h3>
 
             <button
               onClick={onViewAllQuotes}
               className="text-primary text-xs font-semibold hover:underline"
             >
-              View All Requests
+              Voir toutes les demandes
             </button>
           </div>
 

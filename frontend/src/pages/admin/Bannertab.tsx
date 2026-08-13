@@ -69,7 +69,7 @@ export default function BannerTab() {
 
   function handleFileSelect(file: File) {
     if (!file.type.startsWith("image/")) {
-      notify("Only image files are accepted.", "err");
+      notify("Seuls les fichiers image sont acceptés.", "err");
       return;
     }
     setPendingFile(file);
@@ -88,9 +88,9 @@ export default function BannerTab() {
       }
       const slide = await apiForm<HeroSlide>("/api/hero-slides/admin", "POST", fd);
       setSlides((prev) => [...prev, slide]);
-      notify("Slide added successfully.");
+      notify("Diapositive ajoutée avec succès.");
     } catch (e) {
-      notify(e instanceof Error ? e.message : "Upload failed.", "err");
+      notify(e instanceof Error ? e.message : "Échec du téléchargement.", "err");
     } finally {
       setUploading(false);
       setPendingFile(null);
@@ -123,13 +123,13 @@ export default function BannerTab() {
   }
 
   async function deleteSlide(id: number) {
-    if (!confirm("Delete this slide?")) return;
+    if (!confirm("Supprimer cette diapositive ?")) return;
     try {
       await apiDelete(`/api/hero-slides/admin/${id}`);
       setSlides((prev) => prev.filter((s) => s.id !== id));
-      notify("Slide deleted.");
+      notify("Diapositive supprimée.");
     } catch (e) {
-      notify(e instanceof Error ? e.message : "Delete failed.", "err");
+      notify(e instanceof Error ? e.message : "Échec de la suppression.", "err");
     }
   }
 
@@ -152,9 +152,9 @@ export default function BannerTab() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h2 className="text-lg font-bold text-foreground">Hero Slideshow</h2>
+        <h2 className="text-lg font-bold text-foreground">Diaporama principal</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Images displayed in the homepage carousel. Reorder, toggle visibility, or delete slides.
+          Images affichées dans le carrousel de la page d'accueil. Réorganisez, activez ou supprimez des diapositives.
         </p>
       </div>
 
@@ -170,7 +170,7 @@ export default function BannerTab() {
       )}
 
       <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Add a new slide</h3>
+        <h3 className="text-sm font-semibold text-foreground">Ajouter une nouvelle diapositive</h3>
 
         {preview ? (
           <div className="space-y-3">
@@ -182,7 +182,7 @@ export default function BannerTab() {
             {/* Product picker */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <Link size={11} /> Link to a product (optional)
+                <Link size={11} /> Lier à un produit (optionnel)
               </label>
               {linkedProduct ? (
                 <div className="flex items-center justify-between bg-secondary rounded-lg px-3 py-2 text-sm border border-border">

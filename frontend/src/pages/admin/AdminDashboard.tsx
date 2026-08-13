@@ -7,6 +7,7 @@ import PlaceholderTab from "./PlaceholderTab";
 import BannerTab from "./Bannertab";
 import CustomersTab from "./CustomersTab";
 import SettingsTab from "./SettingsTab";
+import CategoryManagement from "../../pages/admin/CategoryManagement";
 
 
 export default function AdminDashboard() {
@@ -18,6 +19,7 @@ export default function AdminDashboard() {
         <OverviewTab onViewAllQuotes={() => setActiveSection("quotes")} />
       )}
       {activeSection === "products" && <ProductsTab />}
+      {activeSection === "categories" && <CategoryManagement />}
       {activeSection === "quotes" && <QuotesTab />}
       {activeSection === "customers" && <CustomersTab />}
       {activeSection === "settings" && <SettingsTab/>}

@@ -14,7 +14,7 @@ export default function PlaceholderTab({ section }: { section: string }) {
         <Icon size={28} className="text-primary" />
       </div>
       <h2 className="text-xl font-bold text-foreground mb-2 capitalize">{section}</h2>
-      <p className="text-muted-foreground text-sm">This section is coming soon.</p>
+      <p className="text-muted-foreground text-sm">Cette section arrive bientôt.</p>
     </div>
   );
 }
