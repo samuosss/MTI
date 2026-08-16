@@ -98,7 +98,7 @@ export function updateQuote(id: number, data: QuoteUpdateInput): Promise<QuoteRe
 }
 
 export function deleteQuote(id: number): Promise<void> {
-  return apiDelete(`/api/quotes/${id}`);
+  return apiDelete(`/quotes/${id}`);
 }
 
 // Admin-only: streams the PDF from the backend and triggers a browser download.

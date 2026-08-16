@@ -3,6 +3,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -112,7 +113,14 @@ def update_product(db: Session, product: Product, data: ProductUpdate) -> Produc
 
 def delete_product(db: Session, product: Product) -> None:
     db.delete(product)  # cascades ProductImage and ProductSpec rows; files on disk are left
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Ce produit est référencé dans des devis existants et ne peut pas être supprimé.",
+        )
 
 
 # ── Image handling ─────────────────────────────────────────────────────────
