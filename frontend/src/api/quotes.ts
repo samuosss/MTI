@@ -110,7 +110,7 @@ export async function downloadQuotePdf(
 ): Promise<void> {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/api/quotes/${id}/pdf`, {
+  const response = await fetch(`${API_BASE_URL}/quotes/${id}/pdf`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 

@@ -37,21 +37,21 @@ export interface ChangePasswordInput {
 }
 
 export function listAdminUsers(): Promise<AdminUserOut[]> {
-  return apiGet<AdminUserOut[]>("/api/admin-users");
+  return apiGet<AdminUserOut[]>("/admin-users");
 }
 
 export function createAdminUser(data: AdminUserCreateInput): Promise<AdminUserOut> {
-  return apiJson<AdminUserOut>("/api/admin-users", "POST", data);
+  return apiJson<AdminUserOut>("/admin-users", "POST", data);
 }
 
 export function updateAdminUser(id: number, data: AdminUserUpdateInput): Promise<AdminUserOut> {
-  return apiJson<AdminUserOut>(`/api/admin-users/${id}`, "PATCH", data);
+  return apiJson<AdminUserOut>(`/admin-users/${id}`, "PATCH", data);
 }
 
 export function deleteAdminUser(id: number): Promise<void> {
-  return apiDelete(`/api/admin-users/${id}`);
+  return apiDelete(`/admin-users/${id}`);
 }
 
 export function changeOwnPassword(data: ChangePasswordInput): Promise<void> {
-  return apiJson<void>("/api/auth/change-password", "POST", data);
+  return apiJson<void>("/auth/change-password", "POST", data);
 }
