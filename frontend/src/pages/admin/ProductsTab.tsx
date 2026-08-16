@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Plus, X, Pencil, Trash2, ImagePlus, AlertCircle, CheckCircle, Search, ChevronDown } from "lucide-react";
 import { listProducts, deleteProduct, listCategories, listBrands } from "../../api/products";
-import { resolveImageUrl } from "../../api/client";
+import { resolveImageUrl, formatPrice } from "../../api/client";
 import type { ProductOut, CategoryOut, BrandOut } from "../../types/product";
 import { PRODUCT_CHANNEL_NAME } from "../../pages/admin/ProductFormPage";
 
@@ -296,7 +296,7 @@ export default function ProductsTab() {
                       {p.category?.name ?? "—"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm font-bold text-foreground">{p.price.toLocaleString()} TND</td>
+                  <td className="px-4 py-3 text-sm font-bold text-foreground">{formatPrice(p.price)} TND</td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <span className={`text-xs font-semibold ${p.stock === 0 ? "text-red-500" : p.stock <= 5 ? "text-orange-500" : "text-green-600"}`}>
                       {p.stock === 0 ? "En rupture" : `${p.stock} unités`}

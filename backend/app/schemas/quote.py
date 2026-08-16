@@ -32,13 +32,23 @@ class QuoteRequestCreate(BaseModel):
 
 
 class QuoteRequestUpdate(BaseModel):
+    """Used by the admin dashboard to edit a quote/order.
+    All fields optional — only fields actually sent are updated (exclude_unset)."""
+
     status: QuoteStatus | None = None
     estimated_value: float | None = None
+    company: str | None = None
+    contact_person: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    description: str | None = None
+    category: str | None = None
 
 
 class QuoteRequestOut(BaseModel):
     id: int
     reference: str
+    order_number: int | None = None
     company: str
     contact_person: str
     email: EmailStr

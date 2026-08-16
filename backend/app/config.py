@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = ""
     SMTP_FROM_NAME: str = "MTI"
 
+    # Admin notification recipient — receives an email on every new order, e.g.:
+    # ADMIN_NOTIFY_EMAIL=admin@mtishop.tn
+    ADMIN_NOTIFY_EMAIL: str = ""
+
     # Used to build links inside emails (verify-email, reset-password)
     FRONTEND_BASE_URL: str = "http://localhost:5173"
 
@@ -73,6 +77,11 @@ def get_settings() -> Settings:
             logger.warning(
                 "SMTP_HOST is empty in production — verification/reset emails will only be "
                 "logged to the console, not actually sent. Set SMTP_* in your production .env."
+            )
+        if not s.ADMIN_NOTIFY_EMAIL:
+            logger.warning(
+                "ADMIN_NOTIFY_EMAIL is empty in production — new order notifications will "
+                "only go to the customer. Set ADMIN_NOTIFY_EMAIL in your production .env."
             )
 
     if s.ENVIRONMENT == "production" and any(

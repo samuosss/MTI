@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.product import Product, ProductImage, ProductSpec
 from app.schemas.product import ProductCreate, ProductUpdate
-from app.models.product import Category  # add to existing import line
-from app.schemas.product import CategoryCreate, CategoryUpdate  
+from app.models.product import Category, Brand  # add to existing import line
+from app.schemas.product import BrandCreate, BrandUpdate, CategoryCreate, CategoryUpdate
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
@@ -284,3 +284,55 @@ def delete_category(db: Session, category: Category) -> None:
         )
     db.delete(category)
     db.commit()
+
+
+def get_brand(db: Session, brand_id: int) -> Brand | None:
+    return db.get(Brand, brand_id)
+
+
+def get_brand_by_name(db: Session, name: str) -> Brand | None:
+    return db.scalar(select(Brand).where(Brand.name == name))
+
+
+def list_brands(db: Session) -> list[Brand]:
+    return list(db.scalars(select(Brand).order_by(Brand.name)).all())
+
+
+def create_brand(db: Session, data: "BrandCreate") -> Brand:
+    if get_brand_by_name(db, data.name) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Une marque avec ce nom existe déjà.",
+        )
+    brand = Brand(name=data.name, logo_url=data.logo_url)
+    db.add(brand)
+    db.commit()
+    db.refresh(brand)
+    return brand
+
+
+def update_brand(db: Session, brand: Brand, data: "BrandUpdate") -> Brand:
+    update_data = data.model_dump(exclude_unset=True)
+    if "name" in update_data and update_data["name"] != brand.name:
+        if get_brand_by_name(db, update_data["name"]) is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Une marque avec ce nom existe déjà.",
+            )
+    for field, value in update_data.items():
+        setattr(brand, field, value)
+    db.commit()
+    db.refresh(brand)
+    return brand
+
+
+def delete_brand(db: Session, brand: Brand) -> None:
+    if brand.products:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Impossible de supprimer une marque associée à des produits. Réaffectez-les d'abord.",
+        )
+    db.delete(brand)
+    db.commit()
+
+    

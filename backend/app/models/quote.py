@@ -21,6 +21,9 @@ class QuoteRequest(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     reference: Mapped[str] = mapped_column(String(20), unique=True, index=True)  # e.g. QR-29402
+    order_number: Mapped[int | None] = mapped_column(
+        Integer, unique=True, index=True, nullable=True
+    )  # sequential, client-facing order number starting at 26001
 
     company: Mapped[str] = mapped_column(String(255), nullable=False)
     contact_person: Mapped[str] = mapped_column(String(255), nullable=False)

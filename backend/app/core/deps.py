@@ -17,6 +17,8 @@ def get_current_admin(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> AdminUser:
+    """Any authenticated back-office user — admin OR moderator.
+    Use this for read-only / list / detail endpoints that both roles may access."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -36,6 +38,32 @@ def get_current_admin(
         raise credentials_exception
 
     return user
+
+
+def require_admin_role(
+    current_admin: AdminUser = Depends(get_current_admin),
+) -> AdminUser:
+    """Admin-only gate. Use on any write endpoint a moderator must NOT access
+    (quotes edit/delete, moderator account management, settings, etc.)."""
+    if current_admin.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cette action nécessite les droits administrateur.",
+        )
+    return current_admin
+
+
+def require_admin_or_moderator_product_access(
+    current_admin: AdminUser = Depends(get_current_admin),
+) -> AdminUser:
+    """Products write access: both admin and moderator are allowed here,
+    since moderators are explicitly permitted to manage products."""
+    if current_admin.role not in ("admin", "moderator"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès non autorisé.",
+        )
+    return current_admin
 
 
 def get_current_customer(
@@ -59,11 +87,6 @@ def get_current_customer(
 def require_verified_customer(
     current_customer: Customer = Depends(get_current_customer),
 ) -> Customer:
-    """
-    Use on endpoints that should stay off-limits until the customer verifies their
-    email (e.g. adding to cart, checkout). Login itself stays open regardless —
-    see get_current_customer, which this builds on top of.
-    """
     if not current_customer.is_verified:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
@@ -76,7 +99,6 @@ def get_optional_customer(
     session_token: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
     db: Session = Depends(get_db),
 ) -> Customer | None:
-    """For routes that behave differently when logged in but don't require it."""
     if session_token is None:
         return None
     session = customer_crud.get_session_by_token(db, session_token)

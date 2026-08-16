@@ -44,5 +44,11 @@ export function banCustomer(id: number, reason: string | null): Promise<Customer
 }
 
 export function unbanCustomer(id: number): Promise<CustomerAdminOut> {
-  return apiJson<CustomerAdminOut>(`/customers/admin/${id}/unban`, "POST");
+return apiJson<CustomerAdminOut>(`/customers/admin/${id}/unban`, "POST");
+}
+export function deleteCustomer(id: number): Promise<void> {
+  // NOTE: backend returns 204 No Content. If apiJson always calls response.json(),
+  // this may throw on the empty body — verify against client.ts and adjust if needed.
+  return apiJson<void>(`/customers/admin/${id}`, "DELETE");
+
 }

@@ -1,16 +1,23 @@
 import random
 import string
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.product import Product
 from app.models.quote import QuoteRequest, QuoteRequestItem, QuoteStatus
 from app.schemas.quote import QuoteRequestCreate, QuoteRequestUpdate
 
+ORDER_NUMBER_START = 26001
+
 
 def generate_reference() -> str:
     return "QR-" + "".join(random.choices(string.digits, k=5))
+
+
+def _next_order_number(db: Session) -> int:
+    current_max = db.scalar(select(func.max(QuoteRequest.order_number)))
+    return (current_max + 1) if current_max else ORDER_NUMBER_START
 
 
 def create_quote_request(
@@ -24,6 +31,7 @@ def create_quote_request(
 
     quote = QuoteRequest(
         reference=reference,
+        order_number=_next_order_number(db),
         company=data.company,
         contact_person=data.contact_person,
         email=data.email,
@@ -85,3 +93,9 @@ def update_quote_request(
     db.commit()
     db.refresh(quote)
     return quote
+
+
+def delete_quote_request(db: Session, quote: QuoteRequest) -> None:
+    # `items` cascade="all, delete-orphan" on the relationship handles line items automatically.
+    db.delete(quote)
+    db.commit()

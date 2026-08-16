@@ -6,13 +6,15 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_admin
+from app.core.deps import get_current_admin, require_admin_or_moderator_product_access, require_admin_role
 from app.crud import product as product_crud
 from app.database import get_db
 from app.models.product import Brand, Category
 from app.models.user import AdminUser
 from app.schemas.product import (
+    BrandCreate,
     BrandOut,
+    BrandUpdate,
     CategoryCreate,
     CategoryOut,
     CategoryTreeOut,
@@ -79,7 +81,11 @@ def list_categories_tree(db: Session = Depends(get_db)):
 
 @router.get("/brands", response_model=list[BrandOut])
 def list_brands(db: Session = Depends(get_db)):
-    return db.scalars(select(Brand).order_by(Brand.name)).all()
+    brands = product_crud.list_brands(db)
+    return [
+        BrandOut(id=b.id, name=b.name, logo_url=b.logo_url, product_count=len(b.products))
+        for b in brands
+    ]
 
 
 @router.get("/{slug}", response_model=ProductOut)
@@ -90,14 +96,14 @@ def get_product_by_slug(slug: str, db: Session = Depends(get_db)):
     return product
 
 
-# ── Admin: category management ─────────────────────────────────────────────
+# ── Admin-only: category management (moderators cannot touch categories) ────
 
 
 @router.post("/categories", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
 def create_category(
     data: CategoryCreate,
     db: Session = Depends(get_db),
-    _: AdminUser = Depends(get_current_admin),
+    _: AdminUser = Depends(require_admin_role),
 ):
     return product_crud.create_category(db, data)
 
@@ -107,7 +113,7 @@ def update_category(
     category_id: int,
     data: CategoryUpdate,
     db: Session = Depends(get_db),
-    _: AdminUser = Depends(get_current_admin),
+    _: AdminUser = Depends(require_admin_role),
 ):
     category = product_crud.get_category(db, category_id)
     if category is None:
@@ -119,15 +125,51 @@ def update_category(
 def delete_category(
     category_id: int,
     db: Session = Depends(get_db),
-    _: AdminUser = Depends(get_current_admin),
+    _: AdminUser = Depends(require_admin_role),
 ):
     category = product_crud.get_category(db, category_id)
     if category is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
     product_crud.delete_category(db, category)
 
+    
+@router.post("/brands", response_model=BrandOut, status_code=status.HTTP_201_CREATED)
+def create_brand(
+    data: BrandCreate,
+    db: Session = Depends(get_db),
+    _: AdminUser = Depends(require_admin_role),
+):
+    brand = product_crud.create_brand(db, data)
+    return BrandOut(id=brand.id, name=brand.name, logo_url=brand.logo_url, product_count=0)
 
-# ── Admin: product management ──────────────────────────────────────────────
+
+@router.patch("/brands/{brand_id}", response_model=BrandOut)
+def update_brand(
+    brand_id: int,
+    data: BrandUpdate,
+    db: Session = Depends(get_db),
+    _: AdminUser = Depends(require_admin_role),
+):
+    brand = product_crud.get_brand(db, brand_id)
+    if brand is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brand not found")
+    brand = product_crud.update_brand(db, brand, data)
+    return BrandOut(id=brand.id, name=brand.name, logo_url=brand.logo_url, product_count=len(brand.products))
+
+
+@router.delete("/brands/{brand_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_brand(
+    brand_id: int,
+    db: Session = Depends(get_db),
+    _: AdminUser = Depends(require_admin_role),
+):
+    brand = product_crud.get_brand(db, brand_id)
+    if brand is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brand not found")
+    product_crud.delete_brand(db, brand)
+
+
+# ── Admin + Moderator: product management ────────────────────────────────────
 
 
 @router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
@@ -146,7 +188,7 @@ def create_product(
     primary_index: int | None = Form(None, description="0-based index among uploaded 'images' marking the cover photo"),
     images: list[UploadFile] = File(default=[]),
     db: Session = Depends(get_db),
-    _: AdminUser = Depends(get_current_admin),
+    _: AdminUser = Depends(require_admin_or_moderator_product_access),
 ):
     parsed_specs = _parse_specs(specs)
 
@@ -189,7 +231,7 @@ def update_product(
     primary_index: int | None = Form(None, description="0-based index among newly uploaded 'images' marking the cover photo"),
     images: list[UploadFile] = File(default=[]),
     db: Session = Depends(get_db),
-    _: AdminUser = Depends(get_current_admin),
+    _: AdminUser = Depends(require_admin_or_moderator_product_access),
 ):
     product = product_crud.get_product(db, product_id)
     if product is None:
@@ -223,7 +265,7 @@ def update_product(
 def delete_product(
     product_id: int,
     db: Session = Depends(get_db),
-    _: AdminUser = Depends(get_current_admin),
+    _: AdminUser = Depends(require_admin_or_moderator_product_access),
 ):
     product = product_crud.get_product(db, product_id)
     if product is None:
@@ -231,7 +273,7 @@ def delete_product(
     product_crud.delete_product(db, product)
 
 
-# ── Admin: image management ────────────────────────────────────────────────
+# ── Admin + Moderator: image management (part of product editing) ──────────
 
 
 @router.patch("/{product_id}/images/{image_id}/primary", response_model=ProductOut)
@@ -239,7 +281,7 @@ def set_primary_image(
     product_id: int,
     image_id: int,
     db: Session = Depends(get_db),
-    _: AdminUser = Depends(get_current_admin),
+    _: AdminUser = Depends(require_admin_or_moderator_product_access),
 ):
     product = product_crud.get_product(db, product_id)
     if product is None:
@@ -252,9 +294,9 @@ def delete_product_image(
     product_id: int,
     image_id: int,
     db: Session = Depends(get_db),
-    _: AdminUser = Depends(get_current_admin),
+    _: AdminUser = Depends(require_admin_or_moderator_product_access),
 ):
     product = product_crud.get_product(db, product_id)
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-    return product_crud.delete_product_image(db, product, image_id)
+    return product_crud.delete_product_image(db, product, image_id)     

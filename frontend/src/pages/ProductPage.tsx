@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import {
-  ChevronLeft, ChevronRight, Star, Package, Minus, Plus,
+  ChevronLeft, ChevronRight, Star, Minus, Plus,
   ShoppingCart, ImagePlus, ZoomIn, X, FileText, Sparkles,
-  Eye, ZoomIn as ZoomInIcon,
+  ZoomIn as ZoomInIcon,
 } from "lucide-react";
-import { resolveImageUrl } from "../api/client";
+import { resolveImageUrl, formatPrice } from "../api/client";
 import { getProductBySlug, listProducts } from "../api/products";
 import Footer from "../components/layout/Footer";
 import type { ProductOut } from "../types/product";
@@ -78,12 +78,9 @@ function SuggestedCard({
           </ul>
         )}
         <div className="flex items-baseline gap-1.5 mt-auto mb-1.5">
-          <span className="text-sm font-black text-foreground">{product.price.toLocaleString()} TND</span>
-          {product.original_price && <span className="text-[10px] text-muted-foreground line-through">{product.original_price.toLocaleString()} TND</span>}
+          <span className="text-sm font-black text-foreground">{formatPrice(product.price)} TND</span>
+          {product.original_price && <span className="text-[10px] text-muted-foreground line-through">{formatPrice(product.original_price)} TND</span>}
         </div>
-        <span className={`text-[10px] font-semibold mb-2 ${product.stock > 5 ? "text-green-600" : product.stock > 0 ? "text-orange-500" : "text-red-500"}`}>
-          {product.stock > 5 ? `${product.stock} en stock` : product.stock > 0 ? `Plus que ${product.stock}` : "Rupture de stock"}
-        </span>
         <div className="flex gap-1.5">
           <button
             onClick={() => onAddToCart(product, 1)}
@@ -376,28 +373,20 @@ export default function ProductPage({
               )}
 
               <div className="flex items-baseline gap-4 mb-3 mt-auto">
-                <span className="text-3xl font-black text-primary">{product.price.toLocaleString()} TND</span>
+                <span className="text-3xl font-black text-primary">{formatPrice(product.price)} TND</span>
                 {product.original_price && (
                   <>
-                    <span className="text-base text-muted-foreground line-through">{product.original_price.toLocaleString()} TND</span>
+                    <span className="text-base text-muted-foreground line-through">{formatPrice(product.original_price)} TND</span>
                     {product.original_price > product.price && (
                       <span className="text-base font-bold text-green-600">
-                        -{(product.original_price - product.price).toLocaleString()} TND
+                        -{formatPrice(product.original_price - product.price)} TND
                       </span>
                     )}
                   </>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 mb-6">
-                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${product.stock > 5 ? "bg-green-500" : product.stock > 0 ? "bg-orange-400" : "bg-red-500"}`} />
-                <Package size={14} className={product.stock > 0 ? "text-green-600" : "text-red-500"} />
-                <span className={`font-semibold text-sm ${product.stock > 5 ? "text-green-600" : product.stock > 0 ? "text-orange-500" : "text-red-500"}`}>
-                  {product.stock > 5 ? `${product.stock} unités disponibles` : product.stock > 0 ? `Plus que ${product.stock} en stock !` : "Rupture de stock"}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-4 mb-6">
                 <div className="flex items-center border border-border rounded-xl overflow-hidden">
                   <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-4 py-3 hover:bg-secondary transition-colors"><Minus size={15} /></button>
                   <span className="px-5 py-3 text-sm font-bold border-x border-border min-w-[48px] text-center">{qty}</span>

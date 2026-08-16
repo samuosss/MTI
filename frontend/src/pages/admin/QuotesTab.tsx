@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Eye, Loader2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, Eye, Loader2, Trash2, X } from "lucide-react";
 import {
   listQuotes,
   updateQuote,
+  deleteQuote,
+  downloadQuotePdf,
   type QuoteRequest,
   type QuoteStatus,
 } from "../../api/quotes";
+import { formatPrice } from "../../api/client";
 
 const filters: ("All" | QuoteStatus)[] = [
   "All",
@@ -22,6 +25,16 @@ const statusOptions: QuoteStatus[] = [
   "CANCELLED",
 ];
 
+// Display-only French labels — the underlying API values stay in English
+// so nothing on the backend (enum, DB, filters) needs to change.
+const STATUS_LABELS_FR: Record<"All" | QuoteStatus, string> = {
+  All: "Tous",
+  PENDING: "En attente",
+  ACTIVE: "Active",
+  COMPLETED: "Terminée",
+  CANCELLED: "Annulée",
+};
+
 function statusClass(status: QuoteStatus) {
   if (status === "ACTIVE") return "bg-green-100 text-green-700";
   if (status === "PENDING") return "bg-orange-100 text-orange-600";
@@ -30,7 +43,25 @@ function statusClass(status: QuoteStatus) {
 }
 
 function formatMoney(value: number | null | undefined) {
-  return `${(value ?? 0).toLocaleString()} TND`;
+  return `${formatPrice(value ?? 0)} TND`;
+}
+
+interface EditForm {
+  company: string;
+  contact_person: string;
+  email: string;
+  phone: string;
+  category: string;
+}
+
+function toEditForm(q: QuoteRequest): EditForm {
+  return {
+    company: q.company ?? "",
+    contact_person: q.contact_person ?? "",
+    email: q.email ?? "",
+    phone: q.phone ?? "",
+    category: q.category ?? "",
+  };
 }
 
 export default function QuotesTab() {
@@ -40,7 +71,13 @@ export default function QuotesTab() {
   const [selectedQuote, setSelectedQuote] = useState<QuoteRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const activeCount = useMemo(
     () => quotes.filter((quote) => quote.status === "ACTIVE").length,
@@ -60,7 +97,7 @@ export default function QuotesTab() {
       setQuotes(response.items);
       setTotal(response.total);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to load quote requests.");
+      setErrorMessage(error instanceof Error ? error.message : "Impossible de charger les demandes de devis.");
     } finally {
       setLoading(false);
     }
@@ -85,13 +122,79 @@ export default function QuotesTab() {
     }
   }
 
+  function openQuote(q: QuoteRequest) {
+    setSelectedQuote(q);
+    setEditMode(false);
+    setEditForm(toEditForm(q));
+  }
+
+  function closeModal() {
+    setSelectedQuote(null);
+    setEditMode(false);
+    setEditForm(null);
+  }
+
+  async function handleSaveEdit() {
+    if (!selectedQuote || !editForm) return;
+    if (!editForm.company.trim() || !editForm.contact_person.trim() || !editForm.email.trim()) {
+      setErrorMessage("Société, contact et email sont obligatoires.");
+      return;
+    }
+    setSavingEdit(true);
+    setErrorMessage(null);
+    try {
+      const updated = await updateQuote(selectedQuote.id, {
+        company: editForm.company.trim(),
+        contact_person: editForm.contact_person.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim() || null,
+        category: editForm.category.trim() || null,
+      });
+      setQuotes((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      setSelectedQuote(updated);
+      setEditMode(false);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Échec de la mise à jour de la commande.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function handleDelete(quote: QuoteRequest) {
+    if (!confirm(`Supprimer la commande ${quote.reference} ? Cette action ne peut pas être annulée.`)) return;
+    setDeletingId(quote.id);
+    setErrorMessage(null);
+    try {
+      await deleteQuote(quote.id);
+      setQuotes((current) => current.filter((item) => item.id !== quote.id));
+      setTotal((t) => Math.max(0, t - 1));
+      if (selectedQuote?.id === quote.id) closeModal();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Échec de la suppression de la commande.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleDownloadPdf(quote: QuoteRequest) {
+    setDownloadingId(quote.id);
+    setErrorMessage(null);
+    try {
+      await downloadQuotePdf(quote.id, quote.order_number, quote.reference);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Échec du téléchargement du PDF.");
+    } finally {
+      setDownloadingId(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           {activeFilter === "All" ? total : quotes.length} demande
           {(activeFilter === "All" ? total : quotes.length) !== 1 ? "s" : ""}
-          <span className="ml-2 text-xs">({activeCount} activ{activeCount !== 1 ? "es" : "e"} dans cette vue)</span>
+          <span className="ml-2 text-xs">({activeCount} active{activeCount !== 1 ? "s" : ""} dans cette vue)</span>
         </p>
 
         <div className="flex flex-wrap gap-2">
@@ -105,7 +208,7 @@ export default function QuotesTab() {
                   : "border-border hover:border-primary text-muted-foreground"
               }`}
             >
-              {filter}
+              {STATUS_LABELS_FR[filter]}
             </button>
           ))}
         </div>
@@ -123,7 +226,7 @@ export default function QuotesTab() {
           <table className="w-full text-sm">
             <thead className="bg-secondary border-b border-border">
               <tr>
-                {["Request ID", "Customer", "Product Category", "Value", "Status", "Actions"].map((h) => (
+                {["N° Commande", "Client", "Catégorie", "Valeur", "Statut", "Actions"].map((h) => (
                   <th key={h} className="text-left text-xs text-muted-foreground font-semibold px-4 py-3">
                     {h}
                   </th>
@@ -164,17 +267,17 @@ export default function QuotesTab() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusClass(q.status)}`}>
-                        {q.status}
+                        {STATUS_LABELS_FR[q.status]}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <button
-                          onClick={() => setSelectedQuote(q)}
+                          onClick={() => openQuote(q)}
                           className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline"
                         >
                           <Eye size={13} />
-                          View
+                          Voir
                         </button>
                         <select
                           value={q.status}
@@ -184,10 +287,30 @@ export default function QuotesTab() {
                         >
                           {statusOptions.map((status) => (
                             <option key={status} value={status}>
-                              {status}
+                              {STATUS_LABELS_FR[status]}
                             </option>
                           ))}
                         </select>
+                        <button
+                          onClick={() => handleDownloadPdf(q)}
+                          disabled={downloadingId === q.id}
+                          className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-secondary disabled:opacity-40"
+                          title="Télécharger le PDF"
+                        >
+                          {downloadingId === q.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Download size={14} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(q)}
+                          disabled={deletingId === q.id}
+                          className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-40"
+                          title="Supprimer la commande"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -198,51 +321,122 @@ export default function QuotesTab() {
         </div>
       </div>
 
-      {selectedQuote && (
+      {selectedQuote && editForm && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
           <div className="bg-card rounded-xl border border-border shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
-                <h3 className="font-bold text-foreground">Quote {selectedQuote.reference}</h3>
+                <h3 className="font-bold text-foreground">Commande {selectedQuote.reference}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(selectedQuote.created_at).toLocaleString()}
+                  {new Date(selectedQuote.created_at).toLocaleString("fr-FR")}
                 </p>
               </div>
-              <button
-                onClick={() => setSelectedQuote(null)}
-                className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-2">
+                {!editMode && (
+                  <button
+                    onClick={() => setEditMode(true)}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Modifier
+                  </button>
+                )}
+                <button
+                  onClick={closeModal}
+                  className="w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             <div className="p-5 space-y-5 overflow-y-auto max-h-[calc(90vh-73px)]">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Company</p>
-                  <p className="font-semibold text-foreground">{selectedQuote.company}</p>
+              {editMode ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">Société *</label>
+                    <input
+                      value={editForm.company}
+                      onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">Contact *</label>
+                    <input
+                      value={editForm.contact_person}
+                      onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">Email *</label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">Téléphone</label>
+                    <input
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-muted-foreground mb-1">Catégorie</label>
+                    <input
+                      value={editForm.category}
+                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="sm:col-span-2 flex gap-2 pt-2">
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={savingEdit}
+                      className="flex-1 bg-primary text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-blue-900 transition-colors disabled:opacity-60"
+                    >
+                      {savingEdit ? "Enregistrement..." : "Enregistrer"}
+                    </button>
+                    <button
+                      onClick={() => { setEditMode(false); setEditForm(toEditForm(selectedQuote)); }}
+                      className="px-5 border border-border text-sm rounded-lg hover:border-primary transition-colors"
+                    >
+                      Annuler
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Contact</p>
-                  <p className="font-semibold text-foreground">{selectedQuote.contact_person}</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Société</p>
+                    <p className="font-semibold text-foreground">{selectedQuote.company}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Contact</p>
+                    <p className="font-semibold text-foreground">{selectedQuote.contact_person}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Email</p>
+                    <p className="font-semibold text-foreground">{selectedQuote.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Téléphone</p>
+                    <p className="font-semibold text-foreground">{selectedQuote.phone || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Catégorie</p>
+                    <p className="font-semibold text-foreground">{selectedQuote.category || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Valeur estimée</p>
+                    <p className="font-semibold text-foreground">{formatMoney(selectedQuote.estimated_value)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Email</p>
-                  <p className="font-semibold text-foreground">{selectedQuote.email}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Phone</p>
-                  <p className="font-semibold text-foreground">{selectedQuote.phone || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Category</p>
-                  <p className="font-semibold text-foreground">{selectedQuote.category || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Estimated Value</p>
-                  <p className="font-semibold text-foreground">{formatMoney(selectedQuote.estimated_value)}</p>
-                </div>
-              </div>
+              )}
 
               <div>
                 <p className="text-xs text-muted-foreground mb-2">Statut</p>
@@ -259,7 +453,7 @@ export default function QuotesTab() {
                       }`}
                     >
                       {selectedQuote.status === status && <CheckCircle2 size={13} />}
-                      {status}
+                      {STATUS_LABELS_FR[status]}
                     </button>
                   ))}
                 </div>
@@ -286,7 +480,7 @@ export default function QuotesTab() {
                       <thead className="bg-secondary">
                         <tr>
                           <th className="text-left text-xs text-muted-foreground font-semibold px-3 py-2">Produit</th>
-                          <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2">Qty</th>
+                          <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2">Qté</th>
                           <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2">Unité</th>
                           <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2">Ligne</th>
                         </tr>
@@ -312,6 +506,28 @@ export default function QuotesTab() {
                     </table>
                   </div>
                 )}
+              </div>
+
+              <div className="pt-2 border-t border-border flex items-center justify-between">
+                <button
+                  onClick={() => handleDownloadPdf(selectedQuote)}
+                  disabled={downloadingId === selectedQuote.id}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline disabled:opacity-60"
+                >
+                  {downloadingId === selectedQuote.id ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Download size={13} />
+                  )}
+                  Télécharger le PDF
+                </button>
+                <button
+                  onClick={() => handleDelete(selectedQuote)}
+                  disabled={deletingId === selectedQuote.id}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:underline disabled:opacity-60"
+                >
+                  <Trash2 size={13} /> Supprimer cette commande
+                </button>
               </div>
             </div>
           </div>

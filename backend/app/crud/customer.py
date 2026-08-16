@@ -198,3 +198,7 @@ def unban_customer(db: Session, customer: Customer) -> Customer:
     db.commit()
     db.refresh(customer)
     return customer
+
+def delete_customer(db: Session, customer: Customer) -> None:
+    db.delete(customer)
+    db.commit()

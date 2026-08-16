@@ -1,21 +1,48 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import { getToken, clearToken, ApiError } from "../api/client";
-import { login as apiLogin } from "../api/auth";
+import { login as apiLogin, getMe } from "../api/auth";
+import type { AdminUser } from "../types/auth";
 
 interface AuthContextValue {
   token: string | null;
+  user: AdminUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() => getToken());
+  const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const fetchUser = useCallback(async () => {
+    try {
+      const me = await getMe();
+      setUser(me);
+    } catch {
+      // Token invalid/expired — clear everything so the UI falls back to login.
+      clearToken();
+      setTokenState(null);
+      setUser(null);
+    }
+  }, []);
+
+  // Load the current admin/moderator profile whenever we have a token
+  // (initial mount with an existing token, or right after login).
+  useEffect(() => {
+    if (token) {
+      fetchUser();
+    } else {
+      setUser(null);
+    }
+  }, [token, fetchUser]);
 
   // Keep state in sync if the token is cleared/set in another tab.
   useEffect(() => {
@@ -42,11 +69,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     clearToken();
     setTokenState(null);
+    setUser(null);
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ token, isAuthenticated: !!token, isLoading, login, logout }}
+      value={{
+        token,
+        user,
+        isAuthenticated: !!token,
+        isLoading,
+        isAdmin: user?.role === "admin",
+        login,
+        logout,
+        refreshUser: fetchUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

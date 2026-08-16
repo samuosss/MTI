@@ -1,6 +1,8 @@
 import logging
 import smtplib
 from email.message import EmailMessage
+from email.utils import formatdate, make_msgid
+from pathlib import Path
 
 from app.config import settings
 
@@ -8,43 +10,50 @@ logger = logging.getLogger("email")
 
 # Couleur de marque MTI — à ajuster si tu as une charte graphique précise
 BRAND_COLOR = "#1a3d7c"
+ACCENT_COLOR = "#F7941D"
 BRAND_NAME = "MTI"
-BRAND_LOGO_URL = "https://mtishop.tn/images/Logo.png"
+
+# Même logo que celui utilisé pour les PDF (app/services/quote_pdf.py) —
+# intégré en pièce jointe "inline" (CID), jamais chargé depuis une URL externe.
+# Une image distante est un déclencheur spam classique ; une image intégrée au
+# message ne fait aucun appel réseau et ne pose donc aucun problème de délivrabilité.
+LOGO_PATH = Path(__file__).resolve().parent.parent / "static" / "logo.png"
+LOGO_CID = "mti-logo"
 
 
 def _email_shell(title: str, body_html: str) -> str:
     """
-    Enveloppe HTML commune : bannière en haut + contenu au centre.
-    Volontairement en inline styles (les clients mail ignorent souvent les <style> externes).
+    Enveloppe HTML : logo intégré en pièce jointe inline (CID) — pas d'appel réseau,
+    donc pas de pénalité spam — avec un rendu propre et sobre.
     """
+    logo_html = (
+        f'<img src="cid:{LOGO_CID}" alt="{BRAND_NAME}" height="40" '
+        f'style="height:40px; width:auto; display:block;" />'
+        if LOGO_PATH.exists()
+        else f'<span style="font-size:20px; font-weight:bold; color:{BRAND_COLOR};">{BRAND_NAME}</span>'
+    )
+
     return f"""\
 <!DOCTYPE html>
 <html>
-  <body style="margin:0; padding:0; background-color:#f4f4f7; font-family:Arial, Helvetica, sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7; padding:24px 0;">
+  <body style="margin:0; padding:0; background-color:#ffffff; font-family:Arial, Helvetica, sans-serif; color:#222222;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; margin:0 auto; padding:28px 20px;">
       <tr>
-        <td align="center">
-          <table role="presentation" width="100%" style="max-width:560px; background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #e5e5e5;">
-            <tr>
-              <td style="background-color:#ffffff; padding:28px 32px 20px; text-align:center;">
-                <img src="{BRAND_LOGO_URL}" alt="{BRAND_NAME}" height="64"
-                     style="height:64px; width:auto; display:inline-block;" />
-              </td>
-            </tr>
-            <tr>
-              <td style="background-color:{BRAND_COLOR}; height:4px; padding:0; font-size:0; line-height:0;">&nbsp;</td>
-            </tr>
-            <tr>
-              <td style="padding:32px; color:#222222; font-size:15px; line-height:1.6;">
-                {body_html}
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:16px 32px; background-color:#fafafa; border-top:1px solid #eeeeee;">
-                <span style="color:#999999; font-size:12px;">{BRAND_NAME} — mtishop.tn</span>
-              </td>
-            </tr>
-          </table>
+        <td style="padding-bottom:16px;">
+          {logo_html}
+        </td>
+      </tr>
+      <tr>
+        <td style="border-top:3px solid {ACCENT_COLOR}; font-size:0; line-height:0; padding:0;">&nbsp;</td>
+      </tr>
+      <tr>
+        <td style="padding:24px 0; font-size:15px; line-height:1.6;">
+          {body_html}
+        </td>
+      </tr>
+      <tr>
+        <td style="border-top:1px solid #e0e0e0; padding-top:14px; font-size:12px; color:#888888;">
+          {BRAND_NAME} - mtishop.tn
         </td>
       </tr>
     </table>
@@ -55,20 +64,41 @@ def _email_shell(title: str, body_html: str) -> str:
 
 def _button(url: str, label: str) -> str:
     return f"""\
-<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
-  <tr>
-    <td style="border-radius:6px; background-color:{BRAND_COLOR};">
-      <a href="{url}" target="_blank"
-         style="display:inline-block; padding:12px 28px; color:#ffffff; font-weight:bold;
-                text-decoration:none; font-size:15px; border-radius:6px;">
-        {label}
-      </a>
-    </td>
-  </tr>
-</table>
+<p style="margin:20px 0;">
+  <a href="{url}" target="_blank"
+     style="display:inline-block; padding:10px 24px; background-color:{BRAND_COLOR}; color:#ffffff;
+            font-weight:bold; text-decoration:none; font-size:15px; border-radius:4px;">
+    {label}
+  </a>
+</p>
 <p style="font-size:12px; color:#999999; word-break:break-all;">
   Ou copiez ce lien dans votre navigateur : <a href="{url}" style="color:{BRAND_COLOR};">{url}</a>
 </p>
+"""
+
+
+def _order_items_table_html(items: list[dict]) -> str:
+    """items: [{"name": str, "quantity": int, "unit_price": float, "line_total": float}, ...]"""
+    rows = "".join(
+        f"""\
+<tr>
+  <td style="padding:6px 0; border-bottom:1px solid #eeeeee;">{i['name']}</td>
+  <td style="padding:6px 0; border-bottom:1px solid #eeeeee; text-align:center;">{i['quantity']}</td>
+  <td style="padding:6px 0; border-bottom:1px solid #eeeeee; text-align:right;">{i['unit_price']:.3f} TND</td>
+  <td style="padding:6px 0; border-bottom:1px solid #eeeeee; text-align:right;">{i['line_total']:.3f} TND</td>
+</tr>"""
+        for i in items
+    )
+    return f"""\
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0; font-size:14px; border-collapse:collapse;">
+  <tr>
+    <td style="text-align:left; padding-bottom:6px; border-bottom:1px solid #cccccc; color:#666666; font-size:12px;">Produit</td>
+    <td style="text-align:center; padding-bottom:6px; border-bottom:1px solid #cccccc; color:#666666; font-size:12px;">Qté</td>
+    <td style="text-align:right; padding-bottom:6px; border-bottom:1px solid #cccccc; color:#666666; font-size:12px;">Prix</td>
+    <td style="text-align:right; padding-bottom:6px; border-bottom:1px solid #cccccc; color:#666666; font-size:12px;">Total</td>
+  </tr>
+  {rows}
+</table>
 """
 
 
@@ -87,8 +117,21 @@ def _send_email(to_email: str, subject: str, text_body: str, html_body: str) -> 
     message["Subject"] = subject
     message["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
     message["To"] = to_email
+    message["Reply-To"] = settings.SMTP_FROM_EMAIL
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid(domain=settings.SMTP_FROM_EMAIL.split("@")[-1] or "mtishop.tn")
     message.set_content(text_body)  # fallback texte brut
     message.add_alternative(html_body, subtype="html")  # version affichée par défaut
+
+    # Embed the logo as an inline attachment (CID) referenced by the HTML body
+    # above via cid:mti-logo — no external request, so no spam penalty.
+    if LOGO_PATH.exists():
+        try:
+            html_part = message.get_body(preferencelist=("html",))
+            with open(LOGO_PATH, "rb") as f:
+                html_part.add_related(f.read(), maintype="image", subtype="png", cid=f"<{LOGO_CID}>")
+        except Exception:
+            logger.exception("Failed to embed logo image in outgoing email")
 
     smtp_port = int(settings.SMTP_PORT)
 
@@ -124,7 +167,7 @@ def send_password_reset_email(to_email: str, reset_link: str) -> None:
 
     _send_email(
         to_email,
-        subject="Réinitialisation de votre mot de passe — MTI",
+        subject="Réinitialisation de votre mot de passe - MTI",
         text_body=text_body,
         html_body=_email_shell("Réinitialisation de mot de passe", body_html),
     )
@@ -149,7 +192,107 @@ mais certaines actions (ajout au panier, achats) resteront limitées tant que l'
 
     _send_email(
         to_email,
-        subject="Vérifiez votre adresse email — MTI",
+        subject="Vérifiez votre adresse email - MTI",
         text_body=text_body,
         html_body=_email_shell("Vérification email", body_html),
+    )
+
+
+def send_order_confirmation_email(
+    to_email: str,
+    order_reference: str,
+    company: str,
+    contact_person: str,
+    items: list[dict],
+    total: float,
+) -> None:
+    """Sent to the customer right after they place an order from the cart."""
+    text_lines = "\n".join(
+        f"- {i['name']} x{i['quantity']} — {i['line_total']:.3f} TND" for i in items
+    )
+    text_body = (
+        f"Merci pour votre commande, {contact_person} !\n\n"
+        f"Référence commande : {order_reference}\n"
+        f"Société : {company}\n\n"
+        f"{text_lines}\n\n"
+        f"Total estimé : {total:.3f} TND\n\n"
+        "Notre équipe vous contactera sous peu pour confirmer les détails de livraison "
+        "et de paiement."
+    )
+
+    body_html = f"""\
+<p style="font-size:16px;"><strong>Merci pour votre commande, {contact_person} !</strong></p>
+<p>Votre commande <strong style="color:{BRAND_COLOR};">{order_reference}</strong> a bien été reçue et est en cours de traitement.</p>
+{_order_items_table_html(items)}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:4px;">
+  <tr>
+    <td style="text-align:right; font-size:16px; font-weight:bold; padding-top:8px; border-top:2px solid {BRAND_COLOR};">
+      Total estimé : {total:.3f} TND
+    </td>
+  </tr>
+</table>
+<p style="margin-top:20px;">Notre équipe vous contactera sous peu pour confirmer les détails de livraison et de paiement.</p>
+"""
+
+    _send_email(
+        to_email,
+        subject=f"Confirmation de commande {order_reference} - MTI",
+        text_body=text_body,
+        html_body=_email_shell("Confirmation de commande", body_html),
+    )
+
+
+def send_admin_order_notification_email(
+    order_reference: str,
+    company: str,
+    contact_person: str,
+    customer_email: str,
+    customer_phone: str | None,
+    items: list[dict],
+    total: float,
+) -> None:
+    """Sent to the single configured admin address on every new order."""
+    admin_email = settings.ADMIN_NOTIFY_EMAIL
+    if not admin_email:
+        logger.warning(
+            f"ADMIN_NOTIFY_EMAIL not set — skipping admin notification for order {order_reference}."
+        )
+        return
+
+    text_lines = "\n".join(
+        f"- {i['name']} x{i['quantity']} — {i['line_total']:.3f} TND" for i in items
+    )
+    text_body = (
+        f"Nouvelle commande reçue : {order_reference}\n\n"
+        f"Société : {company}\n"
+        f"Contact : {contact_person}\n"
+        f"Email : {customer_email}\n"
+        f"Téléphone : {customer_phone or 'N/A'}\n\n"
+        f"{text_lines}\n\n"
+        f"Total estimé : {total:.3f} TND"
+    )
+
+    body_html = f"""\
+<p style="font-size:16px;"><strong>Nouvelle commande reçue : <span style="color:{BRAND_COLOR};">{order_reference}</span></strong></p>
+<p>
+  Société : <strong>{company}</strong><br/>
+  Contact : {contact_person}<br/>
+  Email : {customer_email}<br/>
+  Téléphone : {customer_phone or 'N/A'}
+</p>
+{_order_items_table_html(items)}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:4px;">
+  <tr>
+    <td style="text-align:right; font-size:16px; font-weight:bold; padding-top:8px; border-top:2px solid {BRAND_COLOR};">
+      Total estimé : {total:.3f} TND
+    </td>
+  </tr>
+</table>
+"""
+
+    _send_email(
+        admin_email,
+        subject=f"Nouvelle commande {order_reference} - MTI",
+        text_body=text_body,
+        html_body=_email_shell("Nouvelle commande", body_html),
     )
