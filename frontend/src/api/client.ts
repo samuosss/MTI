@@ -40,6 +40,12 @@ export function resolveImageUrl(path: string | null | undefined): string {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   return `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 }
+/** Formats a price with 3 decimal places and a dot separator, e.g. 1999 -> "1 999.000" */
+export function formatPrice(price: number): string {
+  const [intPart, decPart] = price.toFixed(3).split(".");
+  const withThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${withThousands}.${decPart}`;
+}
 
 export async function parseResponse<T>(res: Response): Promise<T> {
   const contentType = res.headers.get("content-type") || "";

@@ -2,21 +2,28 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
   LayoutDashboard, Package, FolderTree, ListOrdered, Users, BarChart3, Settings,
-  Menu, Bell, LogOut, Activity, Download, Image,
+  Menu, Bell, LogOut, Activity, Download, Image, ExternalLink, ShieldCheck, UserCog, KeyRound,
 } from "lucide-react";
 import logo from "@/imports/new-removebg-preview.png";
 import { useAuth } from "../../context/AuthContext";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 export const navItems = [
-  { icon: LayoutDashboard, label: "tableau de bord", id: "overview" },
-  { icon: Package, label: "Gestion des produits", id: "products" },
-  { icon: FolderTree, label: "Catégories et marques", id: "categories" },
-  { icon: ListOrdered, label: "Demandes de devis", id: "quotes" },
-  { icon: Image, label: "Diaporama principal", id: "banner" },
-  { icon: Users, label: "Clients", id: "customers" },
-  { icon: BarChart3, label: "Analytique", id: "analytics" },
-  { icon: Settings, label: "Paramètres", id: "settings" },
+  { icon: LayoutDashboard, label: "tableau de bord", id: "overview", adminOnly: false },
+  { icon: Package, label: "Gestion des produits", id: "products", adminOnly: false },
+  { icon: FolderTree, label: "Catégories et marques", id: "categories", adminOnly: false },
+  { icon: ListOrdered, label: "Demandes de devis", id: "quotes", adminOnly: false },
+  { icon: Image, label: "Diaporama principal", id: "banner", adminOnly: false },
+  { icon: Users, label: "Clients", id: "customers", adminOnly: false },
+  { icon: BarChart3, label: "Analytique", id: "analytics", adminOnly: false },
+  { icon: UserCog, label: "Modérateurs", id: "moderators", adminOnly: true },
+  { icon: Settings, label: "Paramètres", id: "settings", adminOnly: false },
 ];
+
+const ROLE_LABELS_FR: Record<string, string> = {
+  admin: "Administrateur",
+  moderator: "Modérateur",
+};
 
 export default function DashboardLayout({
   activeSection,
@@ -28,17 +35,22 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user, isAdmin } = useAuth();
+
+  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   function handleBackToSite() {
-    navigate("/");
+    window.open("/", "_blank", "noopener,noreferrer");
   }
 
   function handleLogout() {
     logout();
     navigate("/");
   }
+
+  const initial = user?.full_name?.trim()?.[0]?.toUpperCase() ?? "A";
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -54,7 +66,7 @@ export default function DashboardLayout({
         </div>
 
         <nav className="flex-1 py-4 overflow-y-auto">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <button
               key={item.id}
               onClick={() => { onSectionChange(item.id); setSidebarOpen(false); }}
@@ -67,22 +79,28 @@ export default function DashboardLayout({
         </nav>
 
         <div className="p-4 border-t border-white/10 space-y-1">
-          <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-            <Bell size={15} /> Aide
-          </button>
-          <button
-            onClick={handleBackToSite}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <LogOut size={15} /> Retour au site
-          </button>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <LogOut size={15} /> Déconnexion
-          </button>
-        </div>
+  <button
+    onClick={() => setShowChangePassword(true)}
+    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+  >
+    <KeyRound size={14} className="flex-shrink-0" /> Changer le mot de passe
+  </button>
+  <button className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+    <Bell size={14} className="flex-shrink-0" /> Aide
+  </button>
+  <button
+    onClick={handleBackToSite}
+    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+  >
+    <ExternalLink size={14} className="flex-shrink-0" /> Retour au site
+  </button>
+  <button
+    onClick={handleLogout}
+    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+  >
+    <LogOut size={14} className="flex-shrink-0" /> Déconnexion
+  </button>
+</div>
       </aside>
 
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} />}
@@ -104,7 +122,20 @@ export default function DashboardLayout({
             <button className="flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-900 transition-colors">
               <Download size={13} /> Exporter le rapport
             </button>
-            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-xs font-bold">A</div>
+            {user && (
+              <div className="hidden sm:flex items-center gap-2 pl-1">
+                <div className="text-right leading-tight">
+                  <div className="text-xs font-semibold text-foreground">{user.full_name}</div>
+                  <div className="flex items-center gap-1 justify-end text-[10px] font-bold text-muted-foreground">
+                    {isAdmin ? <ShieldCheck size={10} className="text-primary" /> : <UserCog size={10} className="text-accent" />}
+                    {ROLE_LABELS_FR[user.role] ?? user.role}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-xs font-bold">
+              {initial}
+            </div>
           </div>
         </header>
 
@@ -112,6 +143,10 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {showChangePassword && (
+        <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+      )}
     </div>
   );
 }

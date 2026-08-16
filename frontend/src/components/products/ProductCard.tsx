@@ -1,6 +1,6 @@
 import { ShoppingCart, FileText, Eye, ImagePlus, ZoomIn, Heart } from "lucide-react";
 import { useState } from "react";
-import { resolveImageUrl } from "../../api/client";
+import { resolveImageUrl, formatPrice } from "../../api/client";
 import { useWishlist } from "../../context/WishlistContext";
 import type { ProductOut } from "../../types/product";
 
@@ -144,34 +144,15 @@ export default function ProductCard({
         )}
 
         {/* Price */}
-        <div className="flex items-baseline gap-2 mt-auto mb-2">
+        <div className="flex items-baseline gap-2 mt-auto mb-3">
           <span className="text-lg font-black text-foreground">
-            {product.price.toLocaleString()} TND
+            {formatPrice(product.price)} TND
           </span>
           {product.original_price && (
             <span className="text-sm text-muted-foreground line-through">
-              {product.original_price.toLocaleString()} TND
+              {formatPrice(product.original_price)} TND
             </span>
           )}
-        </div>
-
-        {/* Stock indicator */}
-        <div className="mb-3">
-          <span
-            className={`text-xs font-semibold ${
-              product.stock > 5
-                ? "text-green-600"
-                : product.stock > 0
-                ? "text-orange-500"
-                : "text-red-500"
-            }`}
-          >
-            {product.stock > 5
-              ? `${product.stock} en stock`
-              : product.stock > 0
-              ? `Plus que ${product.stock} disponibles`
-              : "Rupture de stock"}
-          </span>
         </div>
 
         {/* Actions */}

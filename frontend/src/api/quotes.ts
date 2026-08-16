@@ -1,9 +1,11 @@
-// POST  /api/quotes
-// GET   /api/quotes
-// GET   /api/quotes/{quote_id}
-// PATCH /api/quotes/{quote_id}
+// POST   /api/quotes
+// GET    /api/quotes
+// GET    /api/quotes/{quote_id}
+// PATCH  /api/quotes/{quote_id}
+// DELETE /api/quotes/{quote_id}
+// GET    /api/quotes/{quote_id}/pdf
 
-import { apiForm, apiGet, apiJson } from "./client";
+import { apiDelete, apiForm, apiGet, apiJson, API_BASE_URL, getToken } from "./client";
 
 export interface QuoteItem {
   product_id: number;
@@ -23,6 +25,7 @@ export interface QuoteRequestItem {
 export interface QuoteRequest {
   id: number;
   reference: string;
+  order_number: number | null;
   company: string;
   contact_person: string;
   email: string;
@@ -58,6 +61,12 @@ export interface QuoteCreateInput {
 export interface QuoteUpdateInput {
   status?: QuoteStatus;
   estimated_value?: number | null;
+  company?: string;
+  contact_person?: string;
+  email?: string;
+  phone?: string | null;
+  description?: string | null;
+  category?: string | null;
 }
 
 export function submitQuote(data: QuoteCreateInput): Promise<unknown> {
@@ -86,4 +95,36 @@ export function getQuote(id: number): Promise<QuoteRequest> {
 
 export function updateQuote(id: number, data: QuoteUpdateInput): Promise<QuoteRequest> {
   return apiJson<QuoteRequest>(`/api/quotes/${id}`, "PATCH", data);
+}
+
+export function deleteQuote(id: number): Promise<void> {
+  return apiDelete(`/api/quotes/${id}`);
+}
+
+// Admin-only: streams the PDF from the backend and triggers a browser download.
+// Uses the same token storage (getToken) and base URL as the rest of the admin API client.
+export async function downloadQuotePdf(
+  id: number,
+  orderNumber: number | null,
+  reference: string
+): Promise<void> {
+  const token = getToken();
+
+  const response = await fetch(`${API_BASE_URL}/api/quotes/${id}/pdf`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    throw new Error("Échec du téléchargement du PDF.");
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `devis_${orderNumber ?? reference}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }

@@ -3,6 +3,7 @@ export interface AdminUser {
   email: string;
   full_name: string;
   role: string;
+  is_active: boolean;
 }
 
 export interface LoginResponse {

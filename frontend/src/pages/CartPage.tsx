@@ -5,7 +5,7 @@ import {
   Shield, Truck, Check, ImagePlus, AlertCircle, Loader2, Sparkles,
 } from "lucide-react";
 import Footer from "../components/layout/Footer";
-import { resolveImageUrl } from "../api/client";
+import { resolveImageUrl, formatPrice } from "../api/client";
 import { submitQuote } from "../api/quotes";
 import { listProducts } from "../api/products";
 import type { ProductOut } from "../types/product";
@@ -62,7 +62,7 @@ function SuggestionCard({
           {product.name}
         </h4>
         <div className="mt-auto flex items-center justify-between">
-          <span className="text-sm font-black text-foreground">{product.price.toLocaleString()} TND</span>
+          <span className="text-sm font-black text-foreground">{formatPrice(product.price)} TND</span>
           <button
             onClick={() => onAddToCart(product, 1)}
             disabled={product.stock === 0}
@@ -158,7 +158,7 @@ export default function CartPage({
     if (!promo) { setAppliedPromo(null); setPromoMessage("Code promo invalide."); return; }
     if (promo.minSubtotal && subtotal < promo.minSubtotal) {
       setAppliedPromo(null);
-      setPromoMessage(`Ce code requiert un minimum de ${promo.minSubtotal.toLocaleString()} TND.`);
+      setPromoMessage(`Ce code requiert un minimum de ${formatPrice(promo.minSubtotal)} TND.`);
       return;
     }
     setAppliedPromo({ code, percent: promo.percent });
@@ -184,10 +184,10 @@ export default function CartPage({
         description: [
           "Commande depuis la boutique.",
           appliedPromo ? `Code promo: ${appliedPromo.code} (${appliedPromo.percent}%).` : null,
-          `Sous-total: ${subtotal.toLocaleString()} TND.`,
-          appliedPromo ? `Réduction: ${discount.toLocaleString()} TND.` : null,
-          `TVA: ${tax.toLocaleString()} TND.`,
-          `Total: ${total.toLocaleString()} TND.`,
+          `Sous-total: ${formatPrice(subtotal)} TND.`,
+          appliedPromo ? `Réduction: ${formatPrice(discount)} TND.` : null,
+          `TVA: ${formatPrice(tax)} TND.`,
+          `Total: ${formatPrice(total)} TND.`,
         ].filter(Boolean).join("\n"),
         items: cart.map((item) => ({ product_id: item.product.id, quantity: item.qty })),
       });
@@ -303,7 +303,7 @@ export default function CartPage({
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-base font-bold text-primary">
-                          {(p.price * qty).toLocaleString()} TND
+                          {formatPrice(p.price * qty)} TND
                         </span>
                         <button onClick={() => onRemove(p.id)} className="text-muted-foreground hover:text-red-500 transition-colors">
                           <Trash2 size={16} />
@@ -330,17 +330,17 @@ export default function CartPage({
               <div className="space-y-2.5 text-sm mb-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sous-total</span>
-                  <span className="font-medium">{subtotal.toLocaleString()} TND</span>
+                  <span className="font-medium">{formatPrice(subtotal)} TND</span>
                 </div>
                 {appliedPromo && (
                   <div className="flex justify-between text-green-600">
                     <span>Promo ({appliedPromo.code})</span>
-                    <span className="font-medium">-{discount.toLocaleString()} TND</span>
+                    <span className="font-medium">-{formatPrice(discount)} TND</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">TVA (7%)</span>
-                  <span className="font-medium">{tax.toLocaleString()} TND</span>
+                  <span className="font-medium">{formatPrice(tax)} TND</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Livraison</span>
@@ -349,7 +349,7 @@ export default function CartPage({
               </div>
               <div className="border-t border-border pt-3 flex justify-between mb-5">
                 <span className="font-bold text-foreground">Total estimé</span>
-                <span className="font-black text-lg text-primary">{total.toLocaleString()} TND</span>
+                <span className="font-black text-lg text-primary">{formatPrice(total)} TND</span>
               </div>
               <button
                 onClick={() => navigate("/quote")}
