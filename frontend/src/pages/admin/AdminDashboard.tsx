@@ -9,6 +9,7 @@ import CustomersTab from "./CustomersTab";
 import SettingsTab from "./SettingsTab";
 import ModeratorsTab from "./ModeratorsTab";
 import CategoryManagement from "../../pages/admin/CategoryManagement";
+import DeliveryPage from "./DeliveryPage"; 
 import { useAuth } from "../../context/AuthContext";
 
 export default function AdminDashboard() {
@@ -38,6 +39,7 @@ export default function AdminDashboard() {
         <PlaceholderTab section={activeSection} />
       )}
       {activeSection === "banner" && <BannerTab />}
+      {activeSection === "delivery" && <DeliveryPage />}
     </DashboardLayout>
   );
 }

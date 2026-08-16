@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
   LayoutDashboard, Package, FolderTree, ListOrdered, Users, BarChart3, Settings,
-  Menu, Bell, LogOut, Activity, Download, Image, ExternalLink, ShieldCheck, UserCog, KeyRound,
+  Menu, Bell, LogOut, Activity, Download, Image, ExternalLink, ShieldCheck, UserCog, KeyRound, Truck,
 } from "lucide-react";
 import logo from "@/imports/new-removebg-preview.png";
 import { useAuth } from "../../context/AuthContext";
@@ -13,6 +13,7 @@ export const navItems = [
   { icon: Package, label: "Gestion des produits", id: "products", adminOnly: false },
   { icon: FolderTree, label: "Catégories et marques", id: "categories", adminOnly: false },
   { icon: ListOrdered, label: "Demandes de devis", id: "quotes", adminOnly: false },
+  { icon: Truck, label: "Livraison", id: "delivery", adminOnly: false },
   { icon: Image, label: "Diaporama principal", id: "banner", adminOnly: false },
   { icon: Users, label: "Clients", id: "customers", adminOnly: false },
   { icon: BarChart3, label: "Analytique", id: "analytics", adminOnly: false },

@@ -15,8 +15,7 @@ from app.database import Base  # Ensure 'Base' is actually defined in app/db.py
 from app.config import settings
 # IMPORTANT: Import your models here so Alembic can see them for autogenerate!
 # If your models are in app/models.py, uncomment and adjust the line below:
-from app.models import user, product, quote, service, customer, hero_slide, customer_activity
-# this is the Alembic Config object, which provides
+from app.models import user, product, quote, service, customer, hero_slide, customer_activity, delivery_agency# this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 

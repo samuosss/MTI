@@ -8,12 +8,32 @@ import Footer from "../components/layout/Footer";
 import { resolveImageUrl, formatPrice } from "../api/client";
 import { submitQuote } from "../api/quotes";
 import { listProducts } from "../api/products";
+import { listActiveDeliveryAgencies, type DeliveryAgencyOut } from "../api/delivery";
 import type { ProductOut } from "../types/product";
 
 interface CartItem {
   product: ProductOut;
   qty: number;
 }
+
+interface DeliveryAgency {
+  id: string;
+  name: string;
+  fee: number; // TND, set per-agency by admin
+  eta: string;
+}
+
+// Used only if the /api/delivery-agencies call fails (e.g. backend not deployed
+// yet) so the page still works. Once the admin "Livraison" section has real
+// data, agencies fetched from the API replace this automatically.
+const FALLBACK_DELIVERY_AGENCIES: DeliveryAgency[] = [
+  { id: "aramex", name: "Aramex", fee: 7, eta: "24-48h" },
+  { id: "rapide-poste", name: "Rapide Poste", fee: 7, eta: "48-72h" },
+  { id: "first-delivery", name: "First Delivery", fee: 8, eta: "24h" },
+  { id: "mes-colis", name: "Mes Colis", fee: 6, eta: "48-72h" },
+];
+
+const PICKUP_OPTION_ID = "pickup";
 
 // Mini product card for suggestions
 function SuggestionCard({
@@ -96,6 +116,8 @@ export default function CartPage({
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; percent: number } | null>(null);
   const [promoMessage, setPromoMessage] = useState<string | null>(null);
   const [customer, setCustomer] = useState({ company: "", contactPerson: "", email: "", phone: "" });
+  const [deliveryAgencies, setDeliveryAgencies] = useState<DeliveryAgency[]>(FALLBACK_DELIVERY_AGENCIES);
+  const [selectedDelivery, setSelectedDelivery] = useState<string>(PICKUP_OPTION_ID);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successReference, setSuccessReference] = useState<string | null>(null);
@@ -105,14 +127,32 @@ export default function CartPage({
   const subtotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
   const discount = Math.round(subtotal * ((appliedPromo?.percent ?? 0) / 100));
   const discountedSubtotal = Math.max(subtotal - discount, 0);
-  const tax = Math.round(discountedSubtotal * 0.19);
-  const total = discountedSubtotal + tax;
+  const tax = Math.round(discountedSubtotal * 0.07);
+  const selectedAgency = deliveryAgencies.find((a) => a.id === selectedDelivery) ?? null;
+  const deliveryFee = selectedAgency?.fee ?? 0;
+  const total = discountedSubtotal + tax + deliveryFee;
 
   const promoCodes: Record<string, { percent: number; minSubtotal?: number }> = {
     MTI10: { percent: 10 },
     WELCOME5: { percent: 5 },
     ENTERPRISE15: { percent: 15, minSubtotal: 5000 },
   };
+
+  // Load delivery agencies as configured by the admin ("Livraison" dashboard
+  // section). Falls back to the static list above if the API isn't reachable.
+  useEffect(() => {
+    listActiveDeliveryAgencies()
+      .then((agencies: DeliveryAgencyOut[]) => {
+        if (agencies.length > 0) {
+          setDeliveryAgencies(
+            agencies.map((a) => ({ id: String(a.id), name: a.name, fee: Number(a.fee), eta: a.eta ?? "" }))
+          );
+        }
+      })
+      .catch(() => {
+        // Keep FALLBACK_DELIVERY_AGENCIES — don't block checkout on this.
+      });
+  }, []);
 
   // Load suggestions based on cart categories
   useEffect(() => {
@@ -187,6 +227,9 @@ export default function CartPage({
           `Sous-total: ${formatPrice(subtotal)} TND.`,
           appliedPromo ? `Réduction: ${formatPrice(discount)} TND.` : null,
           `TVA: ${formatPrice(tax)} TND.`,
+          selectedAgency
+            ? `Livraison: ${selectedAgency.name} (${formatPrice(selectedAgency.fee)} TND, ${selectedAgency.eta}).`
+            : `Livraison: Retrait / sur devis.`,
           `Total: ${formatPrice(total)} TND.`,
         ].filter(Boolean).join("\n"),
         items: cart.map((item) => ({ product_id: item.product.id, quantity: item.qty })),
@@ -344,7 +387,11 @@ export default function CartPage({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Livraison</span>
-                  <span className="text-green-600 font-medium">Sur devis</span>
+                  {selectedAgency ? (
+                    <span className="font-medium">{formatPrice(selectedAgency.fee)} TND</span>
+                  ) : (
+                    <span className="text-green-600 font-medium">Sur devis</span>
+                  )}
                 </div>
               </div>
               <div className="border-t border-border pt-3 flex justify-between mb-5">
@@ -357,6 +404,56 @@ export default function CartPage({
               >
                 Demander un devis <ArrowRight size={16} />
               </button>
+            </div>
+
+            {/* Delivery */}
+            <div className="bg-card rounded-xl border border-border p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Mode de livraison</p>
+              <div className="space-y-2">
+                <label
+                  className={`flex items-center justify-between gap-3 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${
+                    selectedDelivery === PICKUP_OPTION_ID ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                  }`}
+                >
+                  <span className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="delivery"
+                      checked={selectedDelivery === PICKUP_OPTION_ID}
+                      onChange={() => setSelectedDelivery(PICKUP_OPTION_ID)}
+                      className="accent-primary"
+                    />
+                    <span className="font-medium text-foreground">Retrait / sur devis</span>
+                  </span>
+                  <span className="text-xs text-green-600 font-semibold">Gratuit</span>
+                </label>
+
+                {deliveryAgencies.map((agency) => (
+                  <label
+                    key={agency.id}
+                    className={`flex items-center justify-between gap-3 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${
+                      selectedDelivery === agency.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="delivery"
+                        checked={selectedDelivery === agency.id}
+                        onChange={() => setSelectedDelivery(agency.id)}
+                        className="accent-primary"
+                      />
+                      <span>
+                        <span className="font-medium text-foreground">{agency.name}</span>
+                        {agency.eta && <span className="block text-xs text-muted-foreground">{agency.eta}</span>}
+                      </span>
+                    </span>
+                    <span className="text-sm font-semibold text-foreground whitespace-nowrap">
+                      +{formatPrice(agency.fee)} TND
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {/* Promo code */}
@@ -431,7 +528,7 @@ export default function CartPage({
             <div className="bg-card rounded-xl border border-border p-4 space-y-3">
               {[
                 { icon: Shield, text: "Paiement 100% sécurisé" },
-                { icon: Truck, text: "Livraison express disponible" },
+                { icon: Truck, text: "Livraison via nos partenaires en Tunisie" },
                 { icon: Check, text: "Garantie constructeur incluse" },
               ].map((g) => (
                 <div key={g.text} className="flex items-center gap-3 text-sm text-muted-foreground">

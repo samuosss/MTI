@@ -42,8 +42,9 @@ export function resolveImageUrl(path: string | null | undefined): string {
   return `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 /** Formats a price with 3 decimal places and a dot separator, e.g. 1999 -> "1 999.000" */
-export function formatPrice(price: number): string {
-  const [intPart, decPart] = price.toFixed(3).split(".");
+export function formatPrice(price: number | string): string {
+  const numericPrice = typeof price === "string" ? parseFloat(price) : price;
+  const [intPart, decPart] = (Number.isFinite(numericPrice) ? numericPrice : 0).toFixed(3).split(".");
   const withThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   return `${withThousands}.${decPart}`;
 }
