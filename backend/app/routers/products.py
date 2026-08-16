@@ -24,6 +24,7 @@ from app.schemas.product import (
     ProductOut,
     ProductSpecIn,
     ProductUpdate,
+    ProductVariantOptionIn,
 )
 
 router = APIRouter(prefix="/api/products", tags=["Products"])
@@ -32,6 +33,12 @@ SPECS_EXAMPLE = (
     'JSON list, e.g. '
     '[{"label":"RAM","value":"16GB","notes":null},'
     '{"label":"Processor","value":"Intel i7","notes":"12th Gen"}]'
+)
+
+VARIANT_OPTIONS_EXAMPLE = (
+    'JSON list, e.g. '
+    '[{"group_label":"Pointe","option_label":"N\u00b00=2B","image_url":null,"position":0,"is_default":true},'
+    '{"group_label":"Couleur","option_label":"Rouge","image_url":"/uploads/products/xyz.jpg","position":0,"is_default":false}]'
 )
 
 
@@ -43,6 +50,18 @@ def _parse_specs(specs: str | None) -> list[ProductSpecIn]:
         return [ProductSpecIn(**s) for s in raw]
     except (json.JSONDecodeError, TypeError, ValueError, ValidationError) as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid 'specs' payload: {e}")
+
+
+def _parse_variant_options(variant_options: str | None) -> list[ProductVariantOptionIn]:
+    if not variant_options:
+        return []
+    try:
+        raw = json.loads(variant_options)
+        return [ProductVariantOptionIn(**v) for v in raw]
+    except (json.JSONDecodeError, TypeError, ValueError, ValidationError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid 'variant_options' payload: {e}"
+        )
 
 
 # ── Public endpoints ──────────────────────────────────────────────────────────
@@ -177,6 +196,7 @@ def create_product(
     name: str = Form(...),
     description: str | None = Form(None),
     specs: str | None = Form(None, description=SPECS_EXAMPLE),
+    variant_options: str | None = Form(None, description=VARIANT_OPTIONS_EXAMPLE),
     price: float = Form(...),
     original_price: float | None = Form(None),
     badge: str | None = Form(None),
@@ -191,11 +211,13 @@ def create_product(
     _: AdminUser = Depends(require_admin_or_moderator_product_access),
 ):
     parsed_specs = _parse_specs(specs)
+    parsed_variant_options = _parse_variant_options(variant_options)
 
     data = ProductCreate(
         name=name,
         description=description,
         specs=parsed_specs,
+        variant_options=parsed_variant_options,
         price=price,
         original_price=original_price,
         badge=badge,
@@ -221,6 +243,7 @@ def update_product(
     name: str | None = Form(None),
     description: str | None = Form(None),
     specs: str | None = Form(None, description=SPECS_EXAMPLE),
+    variant_options: str | None = Form(None, description=VARIANT_OPTIONS_EXAMPLE),
     price: float | None = Form(None),
     original_price: float | None = Form(None),
     badge: str | None = Form(None),
@@ -238,11 +261,13 @@ def update_product(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     parsed_specs = _parse_specs(specs) if specs is not None else None
+    parsed_variant_options = _parse_variant_options(variant_options) if variant_options is not None else None
 
     update_fields = {
         "name": name,
         "description": description,
         "specs": parsed_specs,
+        "variant_options": parsed_variant_options,
         "price": price,
         "original_price": original_price,
         "badge": badge,
@@ -299,4 +324,4 @@ def delete_product_image(
     product = product_crud.get_product(db, product_id)
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-    return product_crud.delete_product_image(db, product, image_id)     
+    return product_crud.delete_product_image(db, product, image_id)

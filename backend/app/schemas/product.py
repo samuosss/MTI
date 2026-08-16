@@ -76,6 +76,21 @@ class ProductSpecOut(ProductSpecIn):
         from_attributes = True
 
 
+class ProductVariantOptionIn(BaseModel):
+    group_label: str
+    option_label: str
+    image_url: str | None = None
+    position: int = 0
+    is_default: bool = False
+
+
+class ProductVariantOptionOut(ProductVariantOptionIn):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
 class ProductBase(BaseModel):
     name: str
     description: str | None = None
@@ -91,6 +106,7 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     slug: str | None = None  # auto-generated from name if omitted
     specs: list[ProductSpecIn] = Field(default_factory=list)
+    variant_options: list[ProductVariantOptionIn] = Field(default_factory=list)
 
 
 class ProductUpdate(BaseModel):
@@ -104,6 +120,7 @@ class ProductUpdate(BaseModel):
     category_id: int | None = None
     brand_id: int | None = None
     specs: list[ProductSpecIn] | None = None
+    variant_options: list[ProductVariantOptionIn] | None = None
 
 
 class ProductOut(ProductBase):
@@ -113,6 +130,7 @@ class ProductOut(ProductBase):
     brand: BrandOut | None = None
     images: list[ProductImageOut] = Field(default_factory=list)
     specs: list[ProductSpecOut] = Field(default_factory=list)
+    variant_options: list[ProductVariantOptionOut] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 

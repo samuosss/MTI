@@ -28,6 +28,18 @@ export interface ProductImageOut {
   position: number;
 }
 
+export interface ProductVariantOptionIn {
+  group_label: string;
+  option_label: string;
+  image_url?: string | null;
+  position?: number;
+  is_default?: boolean;
+}
+
+export interface ProductVariantOptionOut extends ProductVariantOptionIn {
+  id: number;
+}
+
 export interface CategoryOut {
   id: number;
   name: string;
@@ -61,6 +73,7 @@ export interface ProductOut {
   brand: BrandOut | null;
   images: ProductImageOut[];
   specs: ProductSpecOut[];
+  variant_options: ProductVariantOptionOut[];
   created_at: string;
   updated_at: string;
 }

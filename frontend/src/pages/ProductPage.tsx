@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router";
 import {
   ChevronLeft, ChevronRight, Star, Minus, Plus,
@@ -101,6 +101,58 @@ function SuggestedCard({
   );
 }
 
+// ── Variant Selector ─────────────────────────────────────────────────────────
+function VariantSelector({
+  product,
+  selected,
+  onSelect,
+}: {
+  product: ProductOut;
+  selected: Record<string, number>;
+  onSelect: (groupLabel: string, optionId: number, imageUrl: string | null) => void;
+}) {
+  const groups = useMemo(() => {
+    const map = new Map<string, ProductOut["variant_options"]>();
+    for (const opt of product.variant_options) {
+      const list = map.get(opt.group_label) ?? [];
+      list.push(opt);
+      map.set(opt.group_label, list);
+    }
+    return Array.from(map.entries());
+  }, [product.variant_options]);
+
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="mb-6 space-y-4">
+      {groups.map(([groupLabel, options]) => (
+        <div key={groupLabel}>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{groupLabel}</p>
+          <div className="flex flex-wrap gap-2">
+            {options.map((opt) => {
+              const isSelected = selected[groupLabel] === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onSelect(groupLabel, opt.id, opt.image_url ?? null)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${
+                    isSelected
+                      ? "bg-primary text-white border-primary"
+                      : "bg-card text-foreground border-border hover:border-primary"
+                  }`}
+                >
+                  {opt.option_label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ProductPage({
   onAddToCart,
 }: {
@@ -118,6 +170,7 @@ export default function ProductPage({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<ProductOut[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, number>>({});
 
   const [isHoveringImg, setIsHoveringImg] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
@@ -133,6 +186,25 @@ export default function ProductPage({
         setProduct(p);
         setQty(1);
         setActiveImg(0);
+
+        // Initialize variant selection to each group's default option (or first),
+        // and jump the gallery to the default's linked photo if it has one.
+        const defaults: Record<string, number> = {};
+        const seenGroups = new Set<string>();
+        let initialImageUrl: string | null = null;
+        for (const opt of p.variant_options) {
+          if (seenGroups.has(opt.group_label)) continue;
+          const groupOptions = p.variant_options.filter((o) => o.group_label === opt.group_label);
+          const def = groupOptions.find((o) => o.is_default) ?? groupOptions[0];
+          defaults[opt.group_label] = def.id;
+          seenGroups.add(opt.group_label);
+          if (!initialImageUrl && def.image_url) initialImageUrl = def.image_url;
+        }
+        setSelectedVariants(defaults);
+        if (initialImageUrl) {
+          const idx = p.images.findIndex((img) => img.image_url === initialImageUrl);
+          if (idx !== -1) setActiveImg(idx);
+        }
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -146,6 +218,14 @@ export default function ProductPage({
       .catch(() => {})
       .finally(() => setLoadingSuggestions(false));
   }, [product?.id]);
+
+  function handleSelectVariant(groupLabel: string, optionId: number, imageUrl: string | null) {
+    setSelectedVariants((prev) => ({ ...prev, [groupLabel]: optionId }));
+    if (imageUrl && product) {
+      const idx = product.images.findIndex((img) => img.image_url === imageUrl);
+      if (idx !== -1) setActiveImg(idx);
+    }
+  }
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     const rect = imgContainerRef.current?.getBoundingClientRect();
@@ -352,6 +432,8 @@ export default function ProductPage({
                 ))}
                 <span className="text-sm text-muted-foreground font-medium">{product.rating.toFixed(1)}</span>
               </div>
+
+              <VariantSelector product={product} selected={selectedVariants} onSelect={handleSelectVariant} />
 
               {product.description && (
                 <p className="text-sm text-muted-foreground leading-relaxed mb-6">{product.description}</p>

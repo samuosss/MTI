@@ -18,6 +18,7 @@ import type {
   ProductListResponse,
   ProductListFilters,
   ProductSpecIn,
+  ProductVariantOptionIn,
   CategoryOut,
   CategoryTreeOut,
   BrandOut,
@@ -44,35 +45,37 @@ export function getProductBySlug(slug: string): Promise<ProductOut> {
 }
 
 export interface ProductWriteInput {
-  name?:           string;
-  description?:    string | null;
-  price?:          number;
-  original_price?: number | null;
-  badge?:          string | null;
-  stock?:          number;
-  rating?:         number;
-  category_id?:    number | null;
-  brand_id?:       number | null;
-  slug?:           string | null;
-  specs?:          ProductSpecIn[];
-  images?:         File[];
-  primary_index?:  number | null;
+  name?:            string;
+  description?:     string | null;
+  price?:           number;
+  original_price?:  number | null;
+  badge?:           string | null;
+  stock?:           number;
+  rating?:          number;
+  category_id?:     number | null;
+  brand_id?:        number | null;
+  slug?:            string | null;
+  specs?:           ProductSpecIn[];
+  variant_options?: ProductVariantOptionIn[];
+  images?:          File[];
+  primary_index?:   number | null;
 }
 
 function buildProductFormData(data: ProductWriteInput): FormData {
   const fd = new FormData();
-  if (data.name !== undefined)                               fd.append("name",           data.name);
-  if (data.description != null)                              fd.append("description",    data.description);
-  if (data.price !== undefined)                              fd.append("price",          String(data.price));
-  if (data.original_price != null)                           fd.append("original_price", String(data.original_price));
-  if (data.badge != null)                                    fd.append("badge",          data.badge);
-  if (data.stock !== undefined)                              fd.append("stock",          String(data.stock));
-  if (data.rating !== undefined)                             fd.append("rating",         String(data.rating));
-  if (data.category_id != null)                              fd.append("category_id",    String(data.category_id));
-  if (data.brand_id != null)                                 fd.append("brand_id",       String(data.brand_id));
-  if (data.slug != null)                                     fd.append("slug",           data.slug);
-  if (data.specs !== undefined)                              fd.append("specs",          JSON.stringify(data.specs));
-  if (data.primary_index != null)                            fd.append("primary_index",  String(data.primary_index));
+  if (data.name !== undefined)                               fd.append("name",            data.name);
+  if (data.description != null)                              fd.append("description",     data.description);
+  if (data.price !== undefined)                              fd.append("price",           String(data.price));
+  if (data.original_price != null)                           fd.append("original_price",  String(data.original_price));
+  if (data.badge != null)                                    fd.append("badge",           data.badge);
+  if (data.stock !== undefined)                              fd.append("stock",           String(data.stock));
+  if (data.rating !== undefined)                             fd.append("rating",          String(data.rating));
+  if (data.category_id != null)                              fd.append("category_id",     String(data.category_id));
+  if (data.brand_id != null)                                 fd.append("brand_id",        String(data.brand_id));
+  if (data.slug != null)                                     fd.append("slug",            data.slug);
+  if (data.specs !== undefined)                              fd.append("specs",           JSON.stringify(data.specs));
+  if (data.variant_options !== undefined)                    fd.append("variant_options",  JSON.stringify(data.variant_options));
+  if (data.primary_index != null)                            fd.append("primary_index",   String(data.primary_index));
   if (data.images) data.images.forEach(f => fd.append("images", f));
   return fd;
 }

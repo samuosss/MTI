@@ -82,6 +82,11 @@ class Product(Base):
         back_populates="product",
         cascade="all, delete-orphan",
     )
+    variant_options: Mapped[list["ProductVariantOption"]] = relationship(
+        back_populates="product",
+        cascade="all, delete-orphan",
+        order_by="ProductVariantOption.position",
+    )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
@@ -114,3 +119,19 @@ class ProductSpec(Base):
     notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     product: Mapped["Product"] = relationship(back_populates="specs")
+
+
+class ProductVariantOption(Base):
+    __tablename__ = "product_variant_options"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+    group_label: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g. "Pointe", "Couleur"
+    option_label: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g. "N°0=2B", "Rouge"
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    product: Mapped["Product"] = relationship(back_populates="variant_options")

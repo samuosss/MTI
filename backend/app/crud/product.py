@@ -8,7 +8,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models.product import Product, ProductImage, ProductSpec
+from app.models.product import Product, ProductImage, ProductSpec, ProductVariantOption
 from app.schemas.product import ProductCreate, ProductUpdate
 from app.models.product import Category, Brand  # add to existing import line
 from app.schemas.product import BrandCreate, BrandUpdate, CategoryCreate, CategoryUpdate
@@ -76,11 +76,22 @@ def create_product(db: Session, data: ProductCreate) -> Product:
         slug = f"{base_slug}-{counter}"
         counter += 1
 
-    product_data = data.model_dump(exclude={"slug", "specs"})
+    product_data = data.model_dump(exclude={"slug", "specs", "variant_options"})
     product = Product(**{**product_data, "slug": slug})
 
     for spec in data.specs:
         product.specs.append(ProductSpec(label=spec.label, value=spec.value, notes=spec.notes))
+
+    for opt in data.variant_options:
+        product.variant_options.append(
+            ProductVariantOption(
+                group_label=opt.group_label,
+                option_label=opt.option_label,
+                image_url=opt.image_url,
+                position=opt.position,
+                is_default=opt.is_default,
+            )
+        )
 
     db.add(product)
     db.commit()
@@ -90,7 +101,7 @@ def create_product(db: Session, data: ProductCreate) -> Product:
 
 def update_product(db: Session, product: Product, data: ProductUpdate) -> Product:
     update_data = data.model_dump(exclude_unset=True)
-    
+
     # Handle specs separately — delete existing then re-insert
     new_specs = update_data.pop("specs", None)
     if new_specs is not None:
@@ -103,6 +114,16 @@ def update_product(db: Session, product: Product, data: ProductUpdate) -> Produc
             spec = ProductSpec(product_id=product.id, **spec_data if isinstance(spec_data, dict) else spec_data.model_dump())
             db.add(spec)
 
+    # Handle variant options separately — same replace-all pattern as specs
+    new_variant_options = update_data.pop("variant_options", None)
+    if new_variant_options is not None:
+        db.query(ProductVariantOption).filter(ProductVariantOption.product_id == product.id).delete()
+        db.flush()
+        for opt_data in new_variant_options:
+            opt_dict = opt_data if isinstance(opt_data, dict) else opt_data.model_dump()
+            option = ProductVariantOption(product_id=product.id, **opt_dict)
+            db.add(option)
+
     # Update remaining scalar fields
     for field, value in update_data.items():
         setattr(product, field, value)
@@ -112,7 +133,7 @@ def update_product(db: Session, product: Product, data: ProductUpdate) -> Produc
     return product
 
 def delete_product(db: Session, product: Product) -> None:
-    db.delete(product)  # cascades ProductImage and ProductSpec rows; files on disk are left
+    db.delete(product)  # cascades ProductImage, ProductSpec and ProductVariantOption rows; files on disk are left
     try:
         db.commit()
     except IntegrityError:
@@ -342,5 +363,3 @@ def delete_brand(db: Session, brand: Brand) -> None:
         )
     db.delete(brand)
     db.commit()
-
-    

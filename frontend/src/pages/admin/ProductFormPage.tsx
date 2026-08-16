@@ -12,7 +12,7 @@ import {
   type ProductWriteInput,
 } from "../../api/products";
 import { resolveImageUrl } from "../../api/client";
-import type { ProductOut, CategoryOut, BrandOut } from "../../types/product";
+import type { ProductOut, CategoryOut, BrandOut, ProductVariantOptionIn } from "../../types/product";
 
 export const PRODUCT_CHANNEL_NAME = "mti-admin-products";
 
@@ -23,6 +23,13 @@ interface SpecRow {
   label: SpecLabel;
   value: string;
   notes: string;
+}
+
+interface VariantRow {
+  group_label: string;
+  option_label: string;
+  image_url: string | null;
+  is_default: boolean;
 }
 
 // ── Image Uploader ────────────────────────────────────────────────────────────
@@ -138,6 +145,81 @@ function SpecBuilder({ specs, onChange }: { specs: SpecRow[]; onChange: (specs: 
   );
 }
 
+// ── Variant Option Builder ─────────────────────────────────────────────────────
+function VariantOptionBuilder({
+  variants, onChange, availableImages,
+}: {
+  variants: VariantRow[];
+  onChange: (variants: VariantRow[]) => void;
+  availableImages: { id: number; image_url: string }[];
+}) {
+  const lastGroupLabel = variants.length > 0 ? variants[variants.length - 1].group_label : "";
+
+  function updateRow(i: number, patch: Partial<VariantRow>) {
+    onChange(variants.map((v, j) => (j === i ? { ...v, ...patch } : v)));
+  }
+
+  function addRow() {
+    onChange([...variants, { group_label: lastGroupLabel, option_label: "", image_url: null, is_default: variants.length === 0 }]);
+  }
+
+  return (
+    <div className="space-y-2">
+      {variants.length === 0 && (
+        <p className="text-xs text-muted-foreground mb-2">
+          Aucune variante. Ex: "Pointe" avec options "N°0=2B", "N°1=B" — ou "Couleur" avec options "Noir", "Rouge" (liées à une photo).
+        </p>
+      )}
+      {availableImages.length === 0 && (
+        <p className="text-xs text-orange-600 mb-2">
+          Aucune image produit disponible pour l'instant — ajoutez d'abord des images ci-dessous pour pouvoir les lier à une option de couleur.
+        </p>
+      )}
+      {variants.map((v, i) => (
+        <div key={i} className="flex gap-2 items-start bg-secondary/30 rounded-lg p-2">
+          <GripVertical size={14} className="mt-2.5 text-muted-foreground flex-shrink-0" />
+          <input
+            placeholder="Groupe (ex. Couleur)"
+            value={v.group_label}
+            onChange={(e) => updateRow(i, { group_label: e.target.value })}
+            className="border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary w-32 flex-shrink-0"
+          />
+          <input
+            placeholder="Option (ex. Rouge)"
+            value={v.option_label}
+            onChange={(e) => updateRow(i, { option_label: e.target.value })}
+            className="border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary flex-1"
+          />
+          <select
+            value={v.image_url ?? ""}
+            onChange={(e) => updateRow(i, { image_url: e.target.value || null })}
+            className="border border-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-primary bg-background w-40 flex-shrink-0"
+          >
+            <option value="">Aucune photo</option>
+            {availableImages.map((img) => (
+              <option key={img.id} value={img.image_url}>Image #{img.id}</option>
+            ))}
+          </select>
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2 flex-shrink-0 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={v.is_default}
+              onChange={(e) => updateRow(i, { is_default: e.target.checked })}
+            />
+            Par défaut
+          </label>
+          <button type="button" onClick={() => onChange(variants.filter((_, j) => j !== i))}
+            className="mt-2 text-muted-foreground hover:text-red-500 transition-colors flex-shrink-0"><X size={14} /></button>
+        </div>
+      ))}
+      <button type="button" onClick={addRow}
+        className="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
+        <Plus size={12} /> Ajouter une option
+      </button>
+    </div>
+  );
+}
+
 // ── Main page (standalone route, meant to be opened in its own tab) ────────
 export default function ProductFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -158,6 +240,7 @@ export default function ProductFormPage() {
   const [categoryId, setCategoryId] = useState("");
   const [brandId, setBrandId] = useState("");
   const [specs, setSpecs] = useState<SpecRow[]>([]);
+  const [variants, setVariants] = useState<VariantRow[]>([]);
   const [images, setImages] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<ProductOut["images"]>([]);
 
@@ -191,6 +274,14 @@ export default function ProductFormPage() {
           setCategoryId(found.category?.id?.toString() ?? "");
           setBrandId(found.brand?.id?.toString() ?? "");
           setSpecs(found.specs.map((s) => ({ label: s.label as SpecLabel, value: s.value, notes: s.notes ?? "" })));
+          setVariants(
+            found.variant_options.map((v) => ({
+              group_label: v.group_label,
+              option_label: v.option_label,
+              image_url: v.image_url ?? null,
+              is_default: v.is_default ?? false,
+            }))
+          );
           setExistingImages(found.images);
         }
       })
@@ -234,6 +325,16 @@ export default function ProductFormPage() {
     setSaving(true);
     setError(null);
     try {
+      const validVariants: ProductVariantOptionIn[] = variants
+        .filter((v) => v.group_label.trim() && v.option_label.trim())
+        .map((v, i) => ({
+          group_label: v.group_label.trim(),
+          option_label: v.option_label.trim(),
+          image_url: v.image_url,
+          position: i,
+          is_default: v.is_default,
+        }));
+
       const payload: ProductWriteInput = {
         name: name.trim(), description: description.trim() || null,
         price: Number(price), original_price: originalPrice ? Number(originalPrice) : null,
@@ -241,6 +342,7 @@ export default function ProductFormPage() {
         category_id: categoryId ? Number(categoryId) : null,
         brand_id: brandId ? Number(brandId) : null,
         specs: specs.filter((s) => s.value.trim()).map((s) => ({ label: s.label, value: s.value.trim(), notes: s.notes.trim() || null })),
+        variant_options: validVariants,
         images: images.length > 0 ? images : undefined,
         primary_index: images.length > 0 ? 0 : null,
       };
@@ -402,6 +504,15 @@ export default function ProductFormPage() {
           <section className="bg-card border border-border rounded-2xl p-6">
             <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Caractéristiques techniques</h3>
             <SpecBuilder specs={specs} onChange={setSpecs} />
+          </section>
+
+          <section className="bg-card border border-border rounded-2xl p-6">
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Variantes (taille, couleur, etc.)</h3>
+            <VariantOptionBuilder
+              variants={variants}
+              onChange={setVariants}
+              availableImages={existingImages.map((img) => ({ id: img.id, image_url: img.image_url }))}
+            />
           </section>
 
           <section className="bg-card border border-border rounded-2xl p-6">
