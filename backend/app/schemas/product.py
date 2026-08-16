@@ -32,12 +32,25 @@ class CategoryUpdate(BaseModel):
     icon: str | None = None
     parent_id: int | None = None
 
+
 class BrandOut(BaseModel):
     id: int
     name: str
+    logo_url: str | None = None
+    product_count: int = 0
 
     class Config:
         from_attributes = True
+
+
+class BrandCreate(BaseModel):
+    name: str
+    logo_url: str | None = None
+
+
+class BrandUpdate(BaseModel):
+    name: str | None = None
+    logo_url: str | None = None
 
 
 class ProductImageOut(BaseModel):

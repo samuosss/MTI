@@ -82,3 +82,15 @@ def unban_customer(
     if not customer.is_banned:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Customer is not banned")
     return customer_crud.unban_customer(db, customer)
+
+@router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_customer(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    _: AdminUser = Depends(get_current_admin),
+):
+    """Permanently deletes a customer account and all related sessions/tokens (cascade)."""
+    customer = customer_crud.get_by_id(db, customer_id)
+    if customer is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Customer not found")
+    customer_crud.delete_customer(db, customer)

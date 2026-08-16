@@ -16,6 +16,7 @@ from app.routers import customer_auth
 from app.routers import customers_admin
 from app.routers import customer_activity
 from app.routers import settings as settings_router   # <-- aliased, no more collision
+from app.routers import admin_users
 
 logger = logging.getLogger("mti")
 
@@ -58,6 +59,7 @@ app.include_router(customers_admin.router)
 app.include_router(customer_activity.wishlist_router)
 app.include_router(customer_activity.cart_router)
 app.include_router(settings_router.router)   # <-- use the alias here
+app.include_router(admin_users.router)
 
 @app.get("/api/health", tags=["Health"])
 def health_check():

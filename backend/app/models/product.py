@@ -49,9 +49,9 @@ class Brand(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     products: Mapped[list["Product"]] = relationship(back_populates="brand")
-
 
 class Product(Base):
     __tablename__ = "products"

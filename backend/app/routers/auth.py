@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.core.deps import get_current_admin
 from app.core.limiter import limiter
-from app.core.security import create_access_token, verify_password
+from app.core.security import create_access_token, hash_password, verify_password
 from app.database import get_db
 from app.models.user import AdminUser
-from app.schemas.user import AdminOut, Token
+from app.schemas.user import AdminOut, ChangePassword, Token
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -36,3 +36,18 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
 @router.get("/me", response_model=AdminOut)
 def read_current_admin(current_admin: AdminUser = Depends(get_current_admin)):
     return current_admin
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_own_password(
+    data: ChangePassword,
+    db: Session = Depends(get_db),
+    current_admin: AdminUser = Depends(get_current_admin),
+):
+    if not verify_password(data.current_password, current_admin.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mot de passe actuel incorrect.",
+        )
+    current_admin.hashed_password = hash_password(data.new_password)
+    db.commit()
