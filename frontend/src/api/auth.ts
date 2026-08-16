@@ -5,7 +5,7 @@ import { apiGet, apiLoginForm, clearToken, setToken } from "./client";
 import type { LoginResponse, AdminUser } from "../types/auth";
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const result = await apiLoginForm<LoginResponse>("/api/auth/login", {
+  const result = await apiLoginForm<LoginResponse>("/auth/login", {
     username: email, // FastAPI OAuth2 uses "username" field even for email
     password,
   });
@@ -18,5 +18,5 @@ export function logout(): void {
 }
 
 export function getMe(): Promise<AdminUser> {
-  return apiGet<AdminUser>("/api/auth/me");
+  return apiGet<AdminUser>("/auth/me");
 }

@@ -27,13 +27,13 @@ export type SiteSettingsPatch = Partial<SiteSettingsOut>;
 
 /** Public — no token required, safe to call before login/for anonymous visitors. */
 export function getPublicSettings(): Promise<SiteSettingsOut> {
-  return apiGet<SiteSettingsOut>("/api/settings", { auth: false });
+  return apiGet<SiteSettingsOut>("/settings", { auth: false });
 }
 
 export function getAdminSettings(): Promise<SiteSettingsOut> {
-  return apiGet<SiteSettingsOut>("/api/settings/admin");
+  return apiGet<SiteSettingsOut>("/settings/admin");
 }
 
 export function updateSettings(patch: SiteSettingsPatch): Promise<SiteSettingsOut> {
-  return apiJson<SiteSettingsOut>("/api/settings/admin", "PATCH", patch);
+  return apiJson<SiteSettingsOut>("/settings/admin", "PATCH", patch);
 }

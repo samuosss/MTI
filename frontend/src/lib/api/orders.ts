@@ -2,23 +2,23 @@ import { apiClient } from "../apiClient";
 import type { ApiOrder, OrderCreateInput, OrderStatusValue } from "../apiTypes";
 
 export async function createOrder(payload: OrderCreateInput): Promise<ApiOrder> {
-  const { data } = await apiClient.post<ApiOrder>("/api/orders", payload);
+  const { data } = await apiClient.post<ApiOrder>("/orders", payload);
   return data;
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────
 
 export async function listOrders(): Promise<ApiOrder[]> {
-  const { data } = await apiClient.get<ApiOrder[]>("/api/orders");
+  const { data } = await apiClient.get<ApiOrder[]>("/orders");
   return data;
 }
 
 export async function getOrder(id: number): Promise<ApiOrder> {
-  const { data } = await apiClient.get<ApiOrder>(`/api/orders/${id}`);
+  const { data } = await apiClient.get<ApiOrder>(`/orders/${id}`);
   return data;
 }
 
 export async function updateOrderStatus(id: number, status: OrderStatusValue): Promise<ApiOrder> {
-  const { data } = await apiClient.patch<ApiOrder>(`/api/orders/${id}/status`, { status });
+  const { data } = await apiClient.patch<ApiOrder>(`/orders/${id}/status`, { status });
   return data;
 }

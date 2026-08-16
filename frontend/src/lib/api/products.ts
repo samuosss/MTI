@@ -16,35 +16,35 @@ export interface ListProductsParams {
 }
 
 export async function listProducts(params: ListProductsParams = {}): Promise<ProductListResponse> {
-  const { data } = await apiClient.get<ProductListResponse>("/api/products", { params });
+  const { data } = await apiClient.get<ProductListResponse>("/products", { params });
   return data;
 }
 
 export async function getProduct(id: number): Promise<ApiProduct> {
-  const { data } = await apiClient.get<ApiProduct>(`/api/products/${id}`);
+  const { data } = await apiClient.get<ApiProduct>(`/products/${id}`);
   return data;
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────
 
 export async function createProduct(payload: ProductCreateInput): Promise<ApiProduct> {
-  const { data } = await apiClient.post<ApiProduct>("/api/products", payload);
+  const { data } = await apiClient.post<ApiProduct>("/products", payload);
   return data;
 }
 
 export async function updateProduct(id: number, payload: ProductUpdateInput): Promise<ApiProduct> {
-  const { data } = await apiClient.patch<ApiProduct>(`/api/products/${id}`, payload);
+  const { data } = await apiClient.patch<ApiProduct>(`/products/${id}`, payload);
   return data;
 }
 
 export async function deleteProduct(id: number): Promise<void> {
-  await apiClient.delete(`/api/products/${id}`);
+  await apiClient.delete(`/products/${id}`);
 }
 
 export async function uploadProductImage(id: number, file: File): Promise<ApiProduct> {
   const formData = new FormData();
   formData.append("file", file);
-  const { data } = await apiClient.post<ApiProduct>(`/api/products/${id}/image`, formData, {
+  const { data } = await apiClient.post<ApiProduct>(`/products/${id}/image`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data;

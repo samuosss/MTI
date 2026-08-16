@@ -13,13 +13,13 @@ export interface ServiceInquiryCreateInput {
 }
 
 export function submitServiceInquiry(data: ServiceInquiryCreateInput): Promise<unknown> {
-  return apiJson("/api/service-inquiries", "POST", data, { auth: false });
+  return apiJson("/service-inquiries", "POST", data, { auth: false });
 }
 
 export function listServiceInquiries(): Promise<unknown[]> {
-  return apiGet("/api/service-inquiries");
+  return apiGet("/service-inquiries");
 }
 
 export function resolveServiceInquiry(id: number): Promise<unknown> {
-  return apiJson(`/api/service-inquiries/${id}/resolve`, "PATCH");
+  return apiJson(`/service-inquiries/${id}/resolve`, "PATCH");
 }

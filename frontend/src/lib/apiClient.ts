@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Cast import.meta to any to access Vite env without a global type declaration here
-export const API_BASE_URL = (import.meta as any)?.env?.VITE_API_BASE_URL || "http://localhost:8000";
+export const API_BASE_URL = (import.meta as any)?.env?.VITE_API_URL || "/api";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

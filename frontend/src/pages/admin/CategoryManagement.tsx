@@ -3,7 +3,7 @@ import {
   Plus, Pencil, Trash2, ChevronRight, ChevronDown, FolderTree,
   X, Loader2, AlertCircle, Save, FolderPlus,
 } from "lucide-react";
-import { getToken, ApiError } from "../../api/client";
+import { apiGet, apiJson, apiDelete } from "../../api/client";
 
 // ── Types (mirrors your Pydantic schemas) ──────────────────────────────────
 
@@ -16,45 +16,18 @@ interface CategoryTreeNode {
   children: CategoryTreeNode[];
 }
 
-// ── API helpers ─────────────────────────────────────────────────────────────
 
-async function apiFetch(path: string, options: RequestInit = {}) {
-  const token = getToken();
 
-  const res = await fetch(path, {
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-
-  if (!res.ok) {
-    let detail = `Erreur ${res.status}`;
-    try {
-      const err = await res.json();
-      detail = err?.detail ?? detail;
-    } catch {
-      // response wasn't JSON, keep default message
-    }
-    throw new ApiError(detail, res.status);
-  }
-
-  if (res.status === 204) return null;
-  return res.json();
-}
-
-const getCategoryTree = (): Promise<CategoryTreeNode[]> => apiFetch("/api/products/categories/tree");
+const getCategoryTree = (): Promise<CategoryTreeNode[]> => apiGet("/products/categories/tree");
 
 const createCategory = (data: { name: string; slug?: string | null; icon?: string | null; parent_id?: number | null }) =>
-  apiFetch("/api/products/categories", { method: "POST", body: JSON.stringify(data) });
+  apiJson("/products/categories", "POST", data);
 
 const updateCategory = (id: number, data: { name?: string; icon?: string | null; parent_id?: number | null }) =>
-  apiFetch(`/api/products/categories/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+  apiJson(`/products/categories/${id}`, "PATCH", data);
 
 const deleteCategory = (id: number) =>
-  apiFetch(`/api/products/categories/${id}`, { method: "DELETE" });
+  apiDelete(`/products/categories/${id}`);
 
 // ── Helpers to keep the parent-picker sane ─────────────────────────────────
 

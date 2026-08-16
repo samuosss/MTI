@@ -72,18 +72,18 @@ export function submitQuote(data: QuoteCreateInput): Promise<unknown> {
   if (data.items?.length) formData.append("items", JSON.stringify(data.items));
   if (data.attachment) formData.append("attachment", data.attachment);
 
-  return apiForm("/api/quotes", "POST", formData, { auth: false });
+  return apiForm("/quotes", "POST", formData, { auth: false });
 }
 
 export function listQuotes(status?: QuoteStatus): Promise<QuoteListResponse> {
   const qs = status ? `?status=${status}` : "";
-  return apiGet<QuoteListResponse>(`/api/quotes${qs}`);
+  return apiGet<QuoteListResponse>(`/quotes${qs}`);
 }
 
 export function getQuote(id: number): Promise<QuoteRequest> {
-  return apiGet<QuoteRequest>(`/api/quotes/${id}`);
+  return apiGet<QuoteRequest>(`/quotes/${id}`);
 }
 
 export function updateQuote(id: number, data: QuoteUpdateInput): Promise<QuoteRequest> {
-  return apiJson<QuoteRequest>(`/api/quotes/${id}`, "PATCH", data);
+  return apiJson<QuoteRequest>(`/quotes/${id}`, "PATCH", data);
 }

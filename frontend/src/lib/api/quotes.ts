@@ -19,7 +19,7 @@ export async function submitQuoteRequest(payload: QuoteRequestFormInput): Promis
   if (payload.description) formData.append("description", payload.description);
   if (payload.file) formData.append("file", payload.file);
 
-  const { data } = await apiClient.post<ApiQuoteRequest>("/api/quotes", formData, {
+  const { data } = await apiClient.post<ApiQuoteRequest>("/quotes", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data;
@@ -28,11 +28,11 @@ export async function submitQuoteRequest(payload: QuoteRequestFormInput): Promis
 // ── Admin ────────────────────────────────────────────────────────────────────
 
 export async function listQuoteRequests(): Promise<ApiQuoteRequest[]> {
-  const { data } = await apiClient.get<ApiQuoteRequest[]>("/api/quotes");
+  const { data } = await apiClient.get<ApiQuoteRequest[]>("/quotes");
   return data;
 }
 
 export async function updateQuoteStatus(id: number, status: QuoteStatusValue): Promise<ApiQuoteRequest> {
-  const { data } = await apiClient.patch<ApiQuoteRequest>(`/api/quotes/${id}/status`, { status });
+  const { data } = await apiClient.patch<ApiQuoteRequest>(`/quotes/${id}/status`, { status });
   return data;
 }

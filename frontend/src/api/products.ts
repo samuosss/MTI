@@ -36,11 +36,11 @@ export function listProducts(filters: ProductListFilters = {}): Promise<ProductL
   if (filters.max_price !== undefined)      params.set("max_price",   String(filters.max_price));
   if (filters.sort)                         params.set("sort",        filters.sort);
   const qs = params.toString();
-  return apiGet<ProductListResponse>(`/api/products${qs ? `?${qs}` : ""}`, { auth: false });
+  return apiGet<ProductListResponse>(`/products${qs ? `?${qs}` : ""}`, { auth: false });
 }
 
 export function getProductBySlug(slug: string): Promise<ProductOut> {
-  return apiGet<ProductOut>(`/api/products/${slug}`, { auth: false });
+  return apiGet<ProductOut>(`/products/${slug}`, { auth: false });
 }
 
 export interface ProductWriteInput {
@@ -78,23 +78,23 @@ function buildProductFormData(data: ProductWriteInput): FormData {
 }
 
 export function createProduct(data: ProductWriteInput): Promise<ProductOut> {
-  return apiForm<ProductOut>("/api/products", "POST", buildProductFormData(data));
+  return apiForm<ProductOut>("/products", "POST", buildProductFormData(data));
 }
 
 export function updateProduct(id: number, data: ProductWriteInput): Promise<ProductOut> {
-  return apiForm<ProductOut>(`/api/products/${id}`, "PATCH", buildProductFormData(data));
+  return apiForm<ProductOut>(`/products/${id}`, "PATCH", buildProductFormData(data));
 }
 
 export function deleteProduct(id: number): Promise<void> {
-  return apiDelete(`/api/products/${id}`);
+  return apiDelete(`/products/${id}`);
 }
 
 export function setPrimaryImage(productId: number, imageId: number): Promise<ProductOut> {
-  return apiJson<ProductOut>(`/api/products/${productId}/images/${imageId}/primary`, "PATCH");
+  return apiJson<ProductOut>(`/products/${productId}/images/${imageId}/primary`, "PATCH");
 }
 
 export function deleteProductImage(productId: number, imageId: number): Promise<void> {
-  return apiDelete(`/api/products/${productId}/images/${imageId}`);
+  return apiDelete(`/products/${productId}/images/${imageId}`);
 }
 
 // ─── Categories ──────────────────────────────────────────────────────────────
@@ -113,27 +113,27 @@ export interface CategoryUpdateInput {
 }
 
 export function listCategories(): Promise<CategoryOut[]> {
-  return apiGet<CategoryOut[]>("/api/products/categories", { auth: false });
+  return apiGet<CategoryOut[]>("/products/categories", { auth: false });
 }
 
 export function listCategoriesTree(): Promise<CategoryTreeOut[]> {
-  return apiGet<CategoryTreeOut[]>("/api/products/categories/tree", { auth: false });
+  return apiGet<CategoryTreeOut[]>("/products/categories/tree", { auth: false });
 }
 
 export function createCategory(data: CategoryWriteInput): Promise<CategoryOut> {
-  return apiJson<CategoryOut>("/api/products/categories", "POST", data);
+  return apiJson<CategoryOut>("/products/categories", "POST", data);
 }
 
 export function updateCategory(id: number, data: CategoryUpdateInput): Promise<CategoryOut> {
-  return apiJson<CategoryOut>(`/api/products/categories/${id}`, "PATCH", data);
+  return apiJson<CategoryOut>(`/products/categories/${id}`, "PATCH", data);
 }
 
 export function deleteCategory(id: number): Promise<void> {
-  return apiDelete(`/api/products/categories/${id}`);
+  return apiDelete(`/products/categories/${id}`);
 }
 
 // ─── Brands ──────────────────────────────────────────────────────────────────
 
 export function listBrands(): Promise<BrandOut[]> {
-  return apiGet<BrandOut[]>("/api/products/brands", { auth: false });
+  return apiGet<BrandOut[]>("/products/brands", { auth: false });
 }

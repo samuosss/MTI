@@ -10,14 +10,14 @@ export interface ServiceRequestInput {
 }
 
 export async function submitServiceRequest(payload: ServiceRequestInput): Promise<ApiServiceRequest> {
-  const { data } = await apiClient.post<ApiServiceRequest>("/api/services", payload);
+  const { data } = await apiClient.post<ApiServiceRequest>("/services", payload);
   return data;
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────
 
 export async function listServiceRequests(): Promise<ApiServiceRequest[]> {
-  const { data } = await apiClient.get<ApiServiceRequest[]>("/api/services");
+  const { data } = await apiClient.get<ApiServiceRequest[]>("/services");
   return data;
 }
 
@@ -25,6 +25,6 @@ export async function updateServiceRequestStatus(
   id: number,
   status: ServiceRequestStatusValue
 ): Promise<ApiServiceRequest> {
-  const { data } = await apiClient.patch<ApiServiceRequest>(`/api/services/${id}/status`, { status });
+  const { data } = await apiClient.patch<ApiServiceRequest>(`/services/${id}/status`, { status });
   return data;
 }

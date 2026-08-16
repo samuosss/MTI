@@ -8,15 +8,15 @@ export interface SavedProductOut {
 }
 
 export function getWishlist(): Promise<SavedProductOut[]> {
-  return customerRequest<SavedProductOut[]>("/api/customers/wishlist", "GET");
+  return customerRequest<SavedProductOut[]>("/customers/wishlist", "GET");
 }
 
 export function addToWishlist(productId: number): Promise<SavedProductOut> {
-  return customerRequest<SavedProductOut>("/api/customers/wishlist", "POST", {
+  return customerRequest<SavedProductOut>("/customers/wishlist", "POST", {
     product_id: productId,
   });
 }
 
 export function removeFromWishlist(productId: number): Promise<void> {
-  return customerRequest<void>(`/api/customers/wishlist/${productId}`, "DELETE");
+  return customerRequest<void>(`/customers/wishlist/${productId}`, "DELETE");
 }

@@ -9,7 +9,7 @@ export async function adminLogin(email: string, password: string): Promise<void>
   body.append("password", password);
 
   const { data } = await apiClient.post<{ access_token: string; token_type: string }>(
-    "/api/auth/login",
+    "/auth/login",
     body,
     { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
   );

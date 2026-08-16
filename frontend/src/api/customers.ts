@@ -26,23 +26,23 @@ export function listCustomers(
   if (params.page_size) query.set("page_size", String(params.page_size));
   if (params.search) query.set("search", params.search);
   const qs = query.toString();
-  return apiGet<CustomerListResponse>(`/api/customers/admin${qs ? `?${qs}` : ""}`);
+  return apiGet<CustomerListResponse>(`/customers/admin${qs ? `?${qs}` : ""}`);
 }
 
 export function getCustomer(id: number): Promise<CustomerAdminOut> {
-  return apiGet<CustomerAdminOut>(`/api/customers/admin/${id}`);
+  return apiGet<CustomerAdminOut>(`/customers/admin/${id}`);
 }
 
 export function setCustomerActive(id: number, isActive: boolean): Promise<CustomerAdminOut> {
-  return apiJson<CustomerAdminOut>(`/api/customers/admin/${id}/status`, "PATCH", {
+  return apiJson<CustomerAdminOut>(`/customers/admin/${id}/status`, "PATCH", {
     is_active: isActive,
   });
 }
 
 export function banCustomer(id: number, reason: string | null): Promise<CustomerAdminOut> {
-  return apiJson<CustomerAdminOut>(`/api/customers/admin/${id}/ban`, "POST", { reason });
+  return apiJson<CustomerAdminOut>(`/customers/admin/${id}/ban`, "POST", { reason });
 }
 
 export function unbanCustomer(id: number): Promise<CustomerAdminOut> {
-  return apiJson<CustomerAdminOut>(`/api/customers/admin/${id}/unban`, "POST");
+  return apiJson<CustomerAdminOut>(`/customers/admin/${id}/unban`, "POST");
 }

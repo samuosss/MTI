@@ -58,7 +58,7 @@ export default function QuoteRequestPage() {
     if (file) fd.append("attachment", file);
 
     try {
-      const res = await fetch("/api/quotes", {
+      const res = await fetch("/quotes", {
         method: "POST",
         body: fd, // no Content-Type header — browser sets multipart boundary automatically
       });

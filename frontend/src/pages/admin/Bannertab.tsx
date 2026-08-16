@@ -52,7 +52,7 @@ export default function BannerTab() {
   async function load() {
     setLoading(true);
     try {
-      const data = await apiGet<HeroSlide[]>("/api/hero-slides/admin");
+      const data = await apiGet<HeroSlide[]>("/hero-slides/admin");
       setSlides(data.sort((a, b) => a.sort_order - b.sort_order));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load slides");
@@ -86,7 +86,7 @@ export default function BannerTab() {
       if (linkedProduct) {
         fd.append("link_url", `/marketplace?product=${linkedProduct.slug}`);
       }
-      const slide = await apiForm<HeroSlide>("/api/hero-slides/admin", "POST", fd);
+      const slide = await apiForm<HeroSlide>("/hero-slides/admin", "POST", fd);
       setSlides((prev) => [...prev, slide]);
       notify("Diapositive ajoutée avec succès.");
     } catch (e) {
@@ -112,7 +112,7 @@ export default function BannerTab() {
   async function toggleActive(slide: HeroSlide) {
     try {
       const updated = await apiJson<HeroSlide>(
-        `/api/hero-slides/admin/${slide.id}`,
+        `/hero-slides/admin/${slide.id}`,
         "PATCH",
         { is_active: !slide.is_active }
       );
@@ -125,7 +125,7 @@ export default function BannerTab() {
   async function deleteSlide(id: number) {
     if (!confirm("Supprimer cette diapositive ?")) return;
     try {
-      await apiDelete(`/api/hero-slides/admin/${id}`);
+      await apiDelete(`/hero-slides/admin/${id}`);
       setSlides((prev) => prev.filter((s) => s.id !== id));
       notify("Diapositive supprimée.");
     } catch (e) {
@@ -143,7 +143,7 @@ export default function BannerTab() {
     try {
       await Promise.all(
         reordered.map((s) =>
-          apiJson(`/api/hero-slides/admin/${s.id}`, "PATCH", { sort_order: s.sort_order })
+          apiJson(`/hero-slides/admin/${s.id}`, "PATCH", { sort_order: s.sort_order })
         )
       );
     } catch { /* silent */ }

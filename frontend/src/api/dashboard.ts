@@ -40,9 +40,9 @@ export interface RecentQuote {
 }
 
 export function getDashboardOverview(): Promise<DashboardOverview> {
-  return apiGet<DashboardOverview>("/api/dashboard/overview");
+  return apiGet<DashboardOverview>("/dashboard/overview");
 }
 
 export function getRecentQuotes(limit = 5): Promise<RecentQuote[]> {
-  return apiGet<RecentQuote[]>(`/api/dashboard/recent-quotes?limit=${limit}`);
+  return apiGet<RecentQuote[]>(`/dashboard/recent-quotes?limit=${limit}`);
 }

@@ -1,7 +1,7 @@
 // Central HTTP client for the MTI FastAPI backend.
 // Handles: JWT injection, multipart uploads, image URL resolution.
 
-export const API_BASE_URL: string = (import.meta as any).env.VITE_API_BASE_URL || "http://localhost:8000";
+export const API_BASE_URL: string = (import.meta as any).env.VITE_API_URL || "/api";
 const TOKEN_STORAGE_KEY = "mti_admin_token";
 
 export class ApiError extends Error {
@@ -38,6 +38,7 @@ export function clearToken(): void {
 export function resolveImageUrl(path: string | null | undefined): string {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (path.startsWith("/uploads/")) return path;
   return `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
