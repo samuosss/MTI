@@ -9,6 +9,7 @@ import {
   type QuoteStatus,
 } from "../../api/quotes";
 import { formatPrice } from "../../api/client";
+import { getLastSeenQuotesAt, markQuotesSeen } from "../../lib/quotesNotifications";
 
 const filters: ("All" | QuoteStatus)[] = [
   "All",
@@ -79,9 +80,29 @@ export default function QuotesTab() {
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Snapshot the "last seen" timestamp once, on mount, BEFORE we mark
+  // the tab as seen. This is what lets us know which rows were newly
+  // created since the admin's previous visit to this tab.
+  const [lastSeenAt] = useState(() => getLastSeenQuotesAt());
+
+  useEffect(() => {
+    // Now that we've captured lastSeenAt above, reset the "seen"
+    // timestamp so the sidebar badge clears immediately.
+    markQuotesSeen();
+  }, []);
+
+  function isNewQuote(q: QuoteRequest) {
+    return new Date(q.created_at).getTime() > new Date(lastSeenAt).getTime();
+  }
+
   const activeCount = useMemo(
     () => quotes.filter((quote) => quote.status === "ACTIVE").length,
     [quotes]
+  );
+
+  const newCount = useMemo(
+    () => quotes.filter((quote) => isNewQuote(quote)).length,
+    [quotes, lastSeenAt]
   );
 
   useEffect(() => {
@@ -195,6 +216,12 @@ export default function QuotesTab() {
           {activeFilter === "All" ? total : quotes.length} demande
           {(activeFilter === "All" ? total : quotes.length) !== 1 ? "s" : ""}
           <span className="ml-2 text-xs">({activeCount} active{activeCount !== 1 ? "s" : ""} dans cette vue)</span>
+          {newCount > 0 && (
+            <span className="ml-2 inline-flex items-center gap-1 text-xs font-bold text-red-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              {newCount} nouvelle{newCount !== 1 ? "s" : ""}
+            </span>
+          )}
         </p>
 
         <div className="flex flex-wrap gap-2">
@@ -250,71 +277,85 @@ export default function QuotesTab() {
                   </td>
                 </tr>
               ) : (
-                quotes.map((q) => (
-                  <tr key={q.id} className="hover:bg-secondary/40 transition-colors">
-                    <td className="px-4 py-3 text-xs font-mono text-muted-foreground">
-                      {q.reference}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-sm font-semibold text-foreground">{q.company}</div>
-                      <div className="text-xs text-muted-foreground">{q.contact_person}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {q.category || "N/A"}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-bold text-foreground">
-                      {formatMoney(q.estimated_value)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusClass(q.status)}`}>
-                        {STATUS_LABELS_FR[q.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() => openQuote(q)}
-                          className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline"
-                        >
-                          <Eye size={13} />
-                          Voir
-                        </button>
-                        <select
-                          value={q.status}
-                          disabled={updatingId === q.id}
-                          onChange={(event) => handleStatusChange(q, event.target.value as QuoteStatus)}
-                          className="border border-border rounded-md px-2 py-1 text-xs bg-background text-muted-foreground focus:outline-none focus:border-primary disabled:opacity-60"
-                        >
-                          {statusOptions.map((status) => (
-                            <option key={status} value={status}>
-                              {STATUS_LABELS_FR[status]}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => handleDownloadPdf(q)}
-                          disabled={downloadingId === q.id}
-                          className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-secondary disabled:opacity-40"
-                          title="Télécharger le PDF"
-                        >
-                          {downloadingId === q.id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Download size={14} />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(q)}
-                          disabled={deletingId === q.id}
-                          className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-40"
-                          title="Supprimer la commande"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                quotes.map((q) => {
+                  const isNew = isNewQuote(q);
+                  return (
+                    <tr
+                      key={q.id}
+                      className={`transition-colors ${
+                        isNew ? "bg-red-50/70 hover:bg-red-50" : "hover:bg-secondary/40"
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-xs font-mono text-muted-foreground">
+                        {isNew && (
+                          <span className="inline-flex items-center gap-1 mr-2 text-[9px] font-bold text-red-600 align-middle">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                            NOUVEAU
+                          </span>
+                        )}
+                        {q.reference}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-semibold text-foreground">{q.company}</div>
+                        <div className="text-xs text-muted-foreground">{q.contact_person}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {q.category || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-bold text-foreground">
+                        {formatMoney(q.estimated_value)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusClass(q.status)}`}>
+                          {STATUS_LABELS_FR[q.status]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => openQuote(q)}
+                            className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline"
+                          >
+                            <Eye size={13} />
+                            Voir
+                          </button>
+                          <select
+                            value={q.status}
+                            disabled={updatingId === q.id}
+                            onChange={(event) => handleStatusChange(q, event.target.value as QuoteStatus)}
+                            className="border border-border rounded-md px-2 py-1 text-xs bg-background text-muted-foreground focus:outline-none focus:border-primary disabled:opacity-60"
+                          >
+                            {statusOptions.map((status) => (
+                              <option key={status} value={status}>
+                                {STATUS_LABELS_FR[status]}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => handleDownloadPdf(q)}
+                            disabled={downloadingId === q.id}
+                            className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-secondary disabled:opacity-40"
+                            title="Télécharger le PDF"
+                          >
+                            {downloadingId === q.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Download size={14} />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(q)}
+                            disabled={deletingId === q.id}
+                            className="p-1.5 text-muted-foreground hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 disabled:opacity-40"
+                            title="Supprimer la commande"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

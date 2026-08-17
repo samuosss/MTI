@@ -205,14 +205,23 @@ def send_order_confirmation_email(
     contact_person: str,
     items: list[dict],
     total: float,
+    order_number: str | int | None = None,
 ) -> None:
-    """Sent to the customer right after they place an order from the cart."""
+    """Sent to the customer right after they place an order from the cart.
+
+    `order_number` is the human-facing number shown to the customer (same
+    value as "DEVIS N°" on the PDF, e.g. 26000). It's optional and defaults
+    to `order_reference` so existing callers keep working unchanged; pass
+    it explicitly (e.g. order_number=quote.order_number) to show 26000
+    instead of the internal reference.
+    """
+    display_number = order_number if order_number is not None else order_reference
     text_lines = "\n".join(
         f"- {i['name']} x{i['quantity']} — {i['line_total']:.3f} TND" for i in items
     )
     text_body = (
         f"Merci pour votre commande, {contact_person} !\n\n"
-        f"Référence commande : {order_reference}\n"
+        f"Numéro de commande : {display_number}\n"
         f"Société : {company}\n\n"
         f"{text_lines}\n\n"
         f"Total estimé : {total:.3f} TND\n\n"
@@ -222,7 +231,7 @@ def send_order_confirmation_email(
 
     body_html = f"""\
 <p style="font-size:16px;"><strong>Merci pour votre commande, {contact_person} !</strong></p>
-<p>Votre commande <strong style="color:{BRAND_COLOR};">{order_reference}</strong> a bien été reçue et est en cours de traitement.</p>
+<p>Votre commande N° <strong style="color:{BRAND_COLOR};">{display_number}</strong> a bien été reçue et est en cours de traitement.</p>
 {_order_items_table_html(items)}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:4px;">
   <tr>
@@ -236,7 +245,7 @@ def send_order_confirmation_email(
 
     _send_email(
         to_email,
-        subject=f"Confirmation de commande {order_reference} - MTI",
+        subject=f"Confirmation de commande N° {display_number} - MTI",
         text_body=text_body,
         html_body=_email_shell("Confirmation de commande", body_html),
     )
@@ -250,12 +259,21 @@ def send_admin_order_notification_email(
     customer_phone: str | None,
     items: list[dict],
     total: float,
+    order_number: str | int | None = None,
 ) -> None:
-    """Sent to the single configured admin address on every new order."""
+    """Sent to the single configured admin address on every new order.
+
+    `order_number` is the human-facing number shown in the email (same value
+    as "DEVIS N°" on the PDF, e.g. 26000). It's optional and defaults to
+    `order_reference` so existing callers keep working unchanged; pass it
+    explicitly (e.g. order_number=quote.order_number) to show 26000 instead
+    of the internal reference.
+    """
+    display_number = order_number if order_number is not None else order_reference
     admin_email = settings.ADMIN_NOTIFY_EMAIL
     if not admin_email:
         logger.warning(
-            f"ADMIN_NOTIFY_EMAIL not set — skipping admin notification for order {order_reference}."
+            f"ADMIN_NOTIFY_EMAIL not set — skipping admin notification for order {display_number}."
         )
         return
 
@@ -263,7 +281,7 @@ def send_admin_order_notification_email(
         f"- {i['name']} x{i['quantity']} — {i['line_total']:.3f} TND" for i in items
     )
     text_body = (
-        f"Nouvelle commande reçue : {order_reference}\n\n"
+        f"Nouvelle commande reçue : N° {display_number}\n\n"
         f"Société : {company}\n"
         f"Contact : {contact_person}\n"
         f"Email : {customer_email}\n"
@@ -273,7 +291,7 @@ def send_admin_order_notification_email(
     )
 
     body_html = f"""\
-<p style="font-size:16px;"><strong>Nouvelle commande reçue : <span style="color:{BRAND_COLOR};">{order_reference}</span></strong></p>
+<p style="font-size:16px;"><strong>Nouvelle commande reçue : N° <span style="color:{BRAND_COLOR};">{display_number}</span></strong></p>
 <p>
   Société : <strong>{company}</strong><br/>
   Contact : {contact_person}<br/>
@@ -292,7 +310,7 @@ def send_admin_order_notification_email(
 
     _send_email(
         admin_email,
-        subject=f"Nouvelle commande {order_reference} - MTI",
+        subject=f"Nouvelle commande N° {display_number} - MTI",
         text_body=text_body,
         html_body=_email_shell("Nouvelle commande", body_html),
     )

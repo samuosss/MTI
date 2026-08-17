@@ -105,6 +105,7 @@ async def submit_quote_request(
         quote.contact_person,
         email_items,
         total,
+        order_number=quote.order_number,
     )
     background_tasks.add_task(
         send_admin_order_notification_email,
@@ -115,6 +116,7 @@ async def submit_quote_request(
         quote.phone,
         email_items,
         total,
+        order_number=quote.order_number,
     )
 
     return quote

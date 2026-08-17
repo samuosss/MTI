@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   LayoutDashboard, Package, FolderTree, ListOrdered, Users, BarChart3, Settings,
@@ -7,6 +7,9 @@ import {
 import logo from "@/imports/new-removebg-preview.png";
 import { useAuth } from "../../context/AuthContext";
 import ChangePasswordModal from "./ChangePasswordModal";
+import DeveloperContactModal from "./DeveloperContactModal";
+import { listQuotes } from "../../api/quotes";
+import { getLastSeenQuotesAt, markQuotesSeen } from "../../lib/quotesNotifications";
 
 export const navItems = [
   { icon: LayoutDashboard, label: "tableau de bord", id: "overview", adminOnly: false },
@@ -26,6 +29,9 @@ const ROLE_LABELS_FR: Record<string, string> = {
   moderator: "Modérateur",
 };
 
+// How often to poll for newly-created quotes, in ms.
+const QUOTES_POLL_INTERVAL_MS = 20000;
+
 export default function DashboardLayout({
   activeSection,
   onSectionChange,
@@ -37,10 +43,50 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showDevContact, setShowDevContact] = useState(false);
+  const [newQuotesCount, setNewQuotesCount] = useState(0);
   const navigate = useNavigate();
   const { logout, user, isAdmin } = useAuth();
 
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+
+  const checkNewQuotes = useCallback(async () => {
+    try {
+      const lastSeen = new Date(getLastSeenQuotesAt()).getTime();
+      const { items } = await listQuotes(undefined);
+      const count = items.filter(
+        (q) => new Date(q.created_at).getTime() > lastSeen
+      ).length;
+      setNewQuotesCount(count);
+    } catch {
+      // Silent fail — badge simply won't update this cycle.
+    }
+  }, []);
+
+  useEffect(() => {
+    checkNewQuotes();
+    const interval = setInterval(checkNewQuotes, QUOTES_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [checkNewQuotes]);
+
+  // If the admin is already sitting on the quotes tab when a poll runs
+  // (e.g. left the tab open), don't leave a stale badge — re-check
+  // whenever activeSection changes into "quotes".
+  useEffect(() => {
+    if (activeSection === "quotes") {
+      markQuotesSeen();
+      setNewQuotesCount(0);
+    }
+  }, [activeSection]);
+
+  function handleSectionChange(id: string) {
+    onSectionChange(id);
+    setSidebarOpen(false);
+    if (id === "quotes") {
+      markQuotesSeen();
+      setNewQuotesCount(0);
+    }
+  }
 
   function handleBackToSite() {
     window.open("/", "_blank", "noopener,noreferrer");
@@ -70,11 +116,19 @@ export default function DashboardLayout({
           {visibleNavItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => { onSectionChange(item.id); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-5 py-3 text-sm font-medium transition-colors ${activeSection === item.id ? "bg-white/15 text-white border-r-2 border-accent" : "text-blue-200 hover:bg-white/10 hover:text-white"}`}
+              onClick={() => handleSectionChange(item.id)}
+              className={`w-full flex items-center gap-3 px-5 py-3 text-sm font-medium transition-colors relative ${activeSection === item.id ? "bg-white/15 text-white border-r-2 border-accent" : "text-blue-200 hover:bg-white/10 hover:text-white"}`}
             >
               <item.icon size={16} />
               {item.label}
+              {item.id === "quotes" && newQuotesCount > 0 && (
+                <span
+                  className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-[0_0_10px_rgba(239,68,68,0.9)] animate-pulse"
+                  title={`${newQuotesCount} nouvelle${newQuotesCount !== 1 ? "s" : ""} demande${newQuotesCount !== 1 ? "s" : ""} de devis`}
+                >
+                  {newQuotesCount > 99 ? "99+" : newQuotesCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -86,7 +140,10 @@ export default function DashboardLayout({
   >
     <KeyRound size={14} className="flex-shrink-0" /> Changer le mot de passe
   </button>
-  <button className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+  <button
+    onClick={() => setShowDevContact(true)}
+    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+  >
     <Bell size={14} className="flex-shrink-0" /> Aide
   </button>
   <button
@@ -147,6 +204,10 @@ export default function DashboardLayout({
 
       {showChangePassword && (
         <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
+      )}
+
+      {showDevContact && (
+        <DeveloperContactModal onClose={() => setShowDevContact(false)} />
       )}
     </div>
   );
