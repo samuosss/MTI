@@ -88,8 +88,31 @@ def list_quote_requests(
 def update_quote_request(
     db: Session, quote: QuoteRequest, data: QuoteRequestUpdate
 ) -> QuoteRequest:
-    for field, value in data.model_dump(exclude_unset=True).items():
+    update_data = data.model_dump(exclude_unset=True)
+
+    # Line items live on a related table, not as plain columns on
+    # QuoteRequest, so they're applied separately (matched by id).
+    items_data = update_data.pop("items", None)
+
+    for field, value in update_data.items():
         setattr(quote, field, value)
+
+    if items_data is not None:
+        items_by_id = {item.id: item for item in quote.items}
+        for item_update in items_data:
+            item = items_by_id.get(item_update["id"])
+            if item is None:
+                continue
+            item.unit_price_snapshot = item_update["unit_price_snapshot"]
+            item.quantity = item_update["quantity"]
+
+        # Recalculate the order total from the (possibly edited) line
+        # items, unless the caller explicitly passed its own
+        # estimated_value in the same request.
+        if "estimated_value" not in update_data:
+            recalculated = sum(i.unit_price_snapshot * i.quantity for i in quote.items)
+            quote.estimated_value = recalculated or None
+
     db.commit()
     db.refresh(quote)
     return quote

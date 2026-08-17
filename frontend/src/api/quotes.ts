@@ -58,6 +58,14 @@ export interface QuoteCreateInput {
   attachment?: File | null;
 }
 
+// Used by the admin dashboard to edit an existing line item's price/quantity.
+// `id` refers to the QuoteRequestItem.id (the line item), not the product id.
+export interface QuoteItemUpdate {
+  id: number;
+  unit_price_snapshot: number;
+  quantity: number;
+}
+
 export interface QuoteUpdateInput {
   status?: QuoteStatus;
   estimated_value?: number | null;
@@ -67,6 +75,7 @@ export interface QuoteUpdateInput {
   phone?: string | null;
   description?: string | null;
   category?: string | null;
+  items?: QuoteItemUpdate[];
 }
 
 export function submitQuote(data: QuoteCreateInput): Promise<unknown> {

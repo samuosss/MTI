@@ -6,6 +6,7 @@ import {
   deleteQuote,
   downloadQuotePdf,
   type QuoteRequest,
+  type QuoteRequestItem,
   type QuoteStatus,
 } from "../../api/quotes";
 import { formatPrice } from "../../api/client";
@@ -55,6 +56,16 @@ interface EditForm {
   category: string;
 }
 
+// Editable copy of a line item. Kept separate from QuoteRequestItem so the
+// admin can type freely (e.g. clear a field) without the underlying data
+// getting mangled — it's converted back to numbers only on save.
+interface EditItem {
+  id: number;
+  product_name_snapshot: string;
+  unit_price_snapshot: string;
+  quantity: string;
+}
+
 function toEditForm(q: QuoteRequest): EditForm {
   return {
     company: q.company ?? "",
@@ -63,6 +74,15 @@ function toEditForm(q: QuoteRequest): EditForm {
     phone: q.phone ?? "",
     category: q.category ?? "",
   };
+}
+
+function toEditItems(items: QuoteRequestItem[]): EditItem[] {
+  return items.map((item) => ({
+    id: item.id,
+    product_name_snapshot: item.product_name_snapshot,
+    unit_price_snapshot: String(item.unit_price_snapshot),
+    quantity: String(item.quantity),
+  }));
 }
 
 export default function QuotesTab() {
@@ -78,6 +98,7 @@ export default function QuotesTab() {
 
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editItems, setEditItems] = useState<EditItem[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Snapshot the "last seen" timestamp once, on mount, BEFORE we mark
@@ -104,6 +125,17 @@ export default function QuotesTab() {
     () => quotes.filter((quote) => isNewQuote(quote)).length,
     [quotes, lastSeenAt]
   );
+
+  // Live total for the edit-mode items table, recalculated from the
+  // (possibly just-typed) price/quantity strings.
+  const editItemsTotal = useMemo(() => {
+    return editItems.reduce((sum, item) => {
+      const price = parseFloat(item.unit_price_snapshot);
+      const qty = parseFloat(item.quantity);
+      if (Number.isNaN(price) || Number.isNaN(qty)) return sum;
+      return sum + price * qty;
+    }, 0);
+  }, [editItems]);
 
   useEffect(() => {
     loadQuotes(activeFilter);
@@ -147,12 +179,20 @@ export default function QuotesTab() {
     setSelectedQuote(q);
     setEditMode(false);
     setEditForm(toEditForm(q));
+    setEditItems(toEditItems(q.items));
   }
 
   function closeModal() {
     setSelectedQuote(null);
     setEditMode(false);
     setEditForm(null);
+    setEditItems([]);
+  }
+
+  function updateEditItem(id: number, field: "unit_price_snapshot" | "quantity", value: string) {
+    setEditItems((current) =>
+      current.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    );
   }
 
   async function handleSaveEdit() {
@@ -161,6 +201,19 @@ export default function QuotesTab() {
       setErrorMessage("Société, contact et email sont obligatoires.");
       return;
     }
+
+    // Validate items: price >= 0, quantity > 0, both must parse as numbers.
+    const parsedItems: { id: number; unit_price_snapshot: number; quantity: number }[] = [];
+    for (const item of editItems) {
+      const price = parseFloat(item.unit_price_snapshot);
+      const qty = parseFloat(item.quantity);
+      if (Number.isNaN(price) || price < 0 || Number.isNaN(qty) || qty <= 0) {
+        setErrorMessage(`Prix/quantité invalide pour "${item.product_name_snapshot}".`);
+        return;
+      }
+      parsedItems.push({ id: item.id, unit_price_snapshot: price, quantity: Math.round(qty) });
+    }
+
     setSavingEdit(true);
     setErrorMessage(null);
     try {
@@ -170,9 +223,11 @@ export default function QuotesTab() {
         email: editForm.email.trim(),
         phone: editForm.phone.trim() || null,
         category: editForm.category.trim() || null,
+        items: parsedItems.length > 0 ? parsedItems : undefined,
       });
       setQuotes((current) => current.map((item) => (item.id === updated.id ? updated : item)));
       setSelectedQuote(updated);
+      setEditItems(toEditItems(updated.items));
       setEditMode(false);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Échec de la mise à jour de la commande.");
@@ -443,7 +498,11 @@ export default function QuotesTab() {
                       {savingEdit ? "Enregistrement..." : "Enregistrer"}
                     </button>
                     <button
-                      onClick={() => { setEditMode(false); setEditForm(toEditForm(selectedQuote)); }}
+                      onClick={() => {
+                        setEditMode(false);
+                        setEditForm(toEditForm(selectedQuote));
+                        setEditItems(toEditItems(selectedQuote.items));
+                      }}
                       className="px-5 border border-border text-sm rounded-lg hover:border-primary transition-colors"
                     >
                       Annuler
@@ -514,6 +573,66 @@ export default function QuotesTab() {
                 {selectedQuote.items.length === 0 ? (
                   <div className="text-sm text-muted-foreground border border-dashed border-border rounded-lg p-4">
                     Aucun élément de ligne de produit joint.
+                  </div>
+                ) : editMode ? (
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-secondary">
+                        <tr>
+                          <th className="text-left text-xs text-muted-foreground font-semibold px-3 py-2">Produit</th>
+                          <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2 w-24">Qté</th>
+                          <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2 w-32">Unité (TND)</th>
+                          <th className="text-right text-xs text-muted-foreground font-semibold px-3 py-2 w-28">Ligne</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {editItems.map((item) => {
+                          const price = parseFloat(item.unit_price_snapshot);
+                          const qty = parseFloat(item.quantity);
+                          const lineTotal = !Number.isNaN(price) && !Number.isNaN(qty) ? price * qty : null;
+                          return (
+                            <tr key={item.id}>
+                              <td className="px-3 py-2 font-medium text-foreground">
+                                {item.product_name_snapshot}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  value={item.quantity}
+                                  onChange={(e) => updateEditItem(item.id, "quantity", e.target.value)}
+                                  className="w-20 border border-border rounded-md px-2 py-1 text-sm text-right focus:outline-none focus:border-primary"
+                                />
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.001"
+                                  value={item.unit_price_snapshot}
+                                  onChange={(e) => updateEditItem(item.id, "unit_price_snapshot", e.target.value)}
+                                  className="w-24 border border-border rounded-md px-2 py-1 text-sm text-right focus:outline-none focus:border-primary"
+                                />
+                              </td>
+                              <td className="px-3 py-2 text-right font-semibold text-foreground">
+                                {lineTotal !== null ? formatMoney(lineTotal) : "—"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="bg-secondary/60 border-t border-border">
+                        <tr>
+                          <td colSpan={3} className="px-3 py-2 text-right text-xs font-semibold text-muted-foreground">
+                            Total
+                          </td>
+                          <td className="px-3 py-2 text-right font-bold text-foreground">
+                            {formatMoney(editItemsTotal)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
                 ) : (
                   <div className="border border-border rounded-lg overflow-hidden">

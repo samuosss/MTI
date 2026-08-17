@@ -21,6 +21,14 @@ class QuoteItemOut(BaseModel):
         from_attributes = True
 
 
+class QuoteItemUpdate(BaseModel):
+    """Used by the admin dashboard to edit an existing line item's price/quantity."""
+
+    id: int
+    unit_price_snapshot: float = Field(ge=0)
+    quantity: int = Field(gt=0)
+
+
 class QuoteRequestCreate(BaseModel):
     company: str
     contact_person: str
@@ -43,6 +51,7 @@ class QuoteRequestUpdate(BaseModel):
     phone: str | None = None
     description: str | None = None
     category: str | None = None
+    items: list[QuoteItemUpdate] | None = None
 
 
 class QuoteRequestOut(BaseModel):
