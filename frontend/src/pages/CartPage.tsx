@@ -125,9 +125,9 @@ export default function CartPage({
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const subtotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
-  const discount = Math.round(subtotal * ((appliedPromo?.percent ?? 0) / 100));
+  const discount = Math.round(subtotal * ((appliedPromo?.percent ?? 0) / 100) * 1000) / 1000;
   const discountedSubtotal = Math.max(subtotal - discount, 0);
-  const tax = Math.round(discountedSubtotal * 0.07);
+  const tax = Math.round(discountedSubtotal * 0.07 * 1000) / 1000;
   const selectedAgency = deliveryAgencies.find((a) => a.id === selectedDelivery) ?? null;
   const deliveryFee = selectedAgency?.fee ?? 0;
   const total = discountedSubtotal + tax + deliveryFee;
