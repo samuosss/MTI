@@ -108,12 +108,21 @@ export default function ProductCard({
       {/* Content */}
       <div className="p-4 flex flex-col flex-1">
         {/* Brand + category */}
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-bold text-accent uppercase tracking-wide">
-            {product.brand?.name ?? "—"}
-          </span>
+        <div className="flex items-center justify-between mb-1 gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {product.brand?.logo_url && (
+              <img
+                src={resolveImageUrl(product.brand.logo_url)}
+                alt={product.brand.name}
+                className="h-4 w-auto max-w-[48px] object-contain flex-shrink-0"
+              />
+            )}
+            <span className="text-xs font-bold text-accent uppercase tracking-wide truncate">
+              {product.brand?.name ?? "—"}
+            </span>
+          </div>
           {product.category && (
-            <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+            <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full flex-shrink-0">
               {product.category.name}
             </span>
           )}

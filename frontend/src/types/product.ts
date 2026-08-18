@@ -55,6 +55,7 @@ export interface CategoryTreeOut extends CategoryOut {
 export interface BrandOut {
   id: number;
   name: string;
+  logo_url: string | null;
 }
 
 export interface ProductOut {

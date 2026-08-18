@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { ArrowLeft, X, Plus, Trash2, ImagePlus, GripVertical, AlertCircle, Loader2, CheckCircle } from "lucide-react";
 import {
   listProducts,
@@ -15,6 +15,7 @@ import { resolveImageUrl } from "../../api/client";
 import type { ProductOut, CategoryOut, BrandOut, ProductVariantOptionIn } from "../../types/product";
 
 export const PRODUCT_CHANNEL_NAME = "mti-admin-products";
+const ADMIN_PRODUCTS_LIST_PATH = "/admin?tab=products";
 
 const SPEC_LABELS = ["RAM", "Processor", "Graphics Card", "Storage", "Screen"] as const;
 type SpecLabel = (typeof SPEC_LABELS)[number];
@@ -220,9 +221,10 @@ function VariantOptionBuilder({
   );
 }
 
-// ── Main page (standalone route, meant to be opened in its own tab) ────────
+// ── Main page ────────────────────────────────────────────────────────────────
 export default function ProductFormPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const isEdit = !!id;
 
   const [initializing, setInitializing] = useState(true);
@@ -292,11 +294,10 @@ export default function ProductFormPage() {
   const topLevel = categories.filter((c) => c.parent_id === null);
   const subCategories = categories.filter((c) => c.parent_id !== null);
 
-  function tryCloseTab() {
-    // Works when this tab was opened via window.open() from the list page (window.opener set).
-    // If the browser blocks it (e.g. tab opened by typing the URL directly), the user
-    // just sees this page stay open — the success/cancel state below still makes that clear.
-    window.close();
+  // Goes back to the admin product list in this same tab. Used for
+  // Cancel and for the post-save redirect below.
+  function goToProductList() {
+    navigate(ADMIN_PRODUCTS_LIST_PATH);
   }
 
   async function handleDeleteExisting(imageId: number) {
@@ -348,13 +349,14 @@ export default function ProductFormPage() {
       };
       const result = isEdit ? await updateProduct(product!.id, payload) : await createProduct(payload);
 
-      // Tell the list tab it can refresh, no backend/polling needed.
+      // Tell any other open list tab it can refresh, no backend/polling needed.
       const channel = new BroadcastChannel(PRODUCT_CHANNEL_NAME);
       channel.postMessage({ type: "product-saved", product: result });
       channel.close();
 
       setSaved(result);
-      setTimeout(tryCloseTab, 900); // auto-close if the browser allows it
+      // Briefly show the confirmation, then return to the product list in this same tab.
+      setTimeout(goToProductList, 900);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Échec de la sauvegarde. Veuillez réessayer.");
     } finally {
@@ -376,8 +378,8 @@ export default function ProductFormPage() {
         <div className="text-center">
           <AlertCircle size={28} className="text-red-500 mx-auto mb-3" />
           <p className="font-semibold text-foreground mb-1">{initError}</p>
-          <button onClick={tryCloseTab} className="text-sm text-primary font-semibold hover:underline mt-2">
-            Fermer cet onglet
+          <button onClick={goToProductList} className="text-sm text-primary font-semibold hover:underline mt-2">
+            Retour à la liste des produits
           </button>
         </div>
       </div>
@@ -390,10 +392,10 @@ export default function ProductFormPage() {
         <div className="text-center max-w-sm">
           <CheckCircle size={32} className="text-green-500 mx-auto mb-3" />
           <p className="font-bold text-foreground mb-1">{isEdit ? "Produit mis à jour" : "Produit créé"}</p>
-          <p className="text-sm text-muted-foreground mb-5">"{saved.name}" a été enregistré. Cet onglet peut être fermé.</p>
-          <button onClick={tryCloseTab}
+          <p className="text-sm text-muted-foreground mb-5">"{saved.name}" a été enregistré. Retour à la liste des produits...</p>
+          <button onClick={goToProductList}
             className="bg-primary text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-blue-900 transition-colors text-sm">
-            Fermer cet onglet
+            Retour à la liste des produits
           </button>
         </div>
       </div>
@@ -404,7 +406,7 @@ export default function ProductFormPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <div className="flex items-center justify-between px-4 sm:px-6 h-14 border-b border-border bg-white flex-shrink-0 sticky top-0 z-10">
         <div className="flex items-center gap-3 min-w-0">
-          <button onClick={tryCloseTab} className="p-1.5 -ml-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-colors flex-shrink-0">
+          <button onClick={goToProductList} className="p-1.5 -ml-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-colors flex-shrink-0">
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0">
@@ -413,7 +415,7 @@ export default function ProductFormPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button onClick={tryCloseTab} className="px-4 py-2 text-sm border border-border text-muted-foreground rounded-lg hover:border-primary hover:text-foreground transition-colors">
+          <button onClick={goToProductList} className="px-4 py-2 text-sm border border-border text-muted-foreground rounded-lg hover:border-primary hover:text-foreground transition-colors">
             Annuler
           </button>
           <button onClick={handleSave} disabled={saving}
@@ -527,7 +529,7 @@ export default function ProductFormPage() {
               className="flex-1 bg-primary text-white font-semibold py-3 rounded-xl hover:bg-blue-900 transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm">
               {saving ? "Enregistrement..." : isEdit ? "Enregistrer les modifications" : "Créer un produit"}
             </button>
-            <button onClick={tryCloseTab} className="px-6 border border-border text-muted-foreground rounded-xl hover:border-primary transition-colors text-sm">
+            <button onClick={goToProductList} className="px-6 border border-border text-muted-foreground rounded-xl hover:border-primary transition-colors text-sm">
               Annuler
             </button>
           </div>

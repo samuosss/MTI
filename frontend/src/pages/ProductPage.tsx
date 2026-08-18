@@ -56,9 +56,18 @@ function SuggestedCard({
         )}
       </div>
       <div className="p-3 flex flex-col flex-1">
-        <div className="flex items-center justify-between mb-0.5">
-          <span className="text-[10px] font-bold text-accent uppercase tracking-wide">{product.brand?.name ?? "—"}</span>
-          {product.category && <span className="text-[9px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-full">{product.category.name}</span>}
+        <div className="flex items-center justify-between mb-0.5 gap-2">
+          <div className="flex items-center gap-1 min-w-0">
+            {product.brand?.logo_url && (
+              <img
+                src={resolveImageUrl(product.brand.logo_url)}
+                alt={product.brand.name}
+                className="h-3.5 w-auto max-w-[36px] object-contain flex-shrink-0"
+              />
+            )}
+            <span className="text-[10px] font-bold text-accent uppercase tracking-wide truncate">{product.brand?.name ?? "—"}</span>
+          </div>
+          {product.category && <span className="text-[9px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-full flex-shrink-0">{product.category.name}</span>}
         </div>
         <h4
           onClick={() => navigate(`/product/${product.slug}`)}
@@ -418,6 +427,13 @@ export default function ProductPage({
             {/* Right: info panel */}
             <div className="flex-1 p-8 flex flex-col">
               <div className="flex items-center gap-3 mb-3 flex-wrap">
+                {product.brand?.logo_url && (
+                  <img
+                    src={resolveImageUrl(product.brand.logo_url)}
+                    alt={product.brand.name}
+                    className="h-8 w-auto max-w-[120px] object-contain"
+                  />
+                )}
                 <span className="text-xs font-bold text-accent uppercase tracking-widest">{product.brand?.name ?? "—"}</span>
                 {product.category && (
                   <span className="text-xs text-muted-foreground bg-secondary px-2.5 py-1 rounded-full">{product.category.name}</span>
